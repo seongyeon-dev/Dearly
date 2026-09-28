@@ -7,7 +7,7 @@ function Sidebar() {
         <div className={styles.avatar}>🎀</div>
 
         <h2>Dearly, Me</h2>
-        <p>나의 작은 취향 공간</p>
+        <p>나의 위시리스트</p>
       </div>
 
       <nav className={styles.navigation}>
