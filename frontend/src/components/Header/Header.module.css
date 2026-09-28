@@ -1,0 +1,22 @@
+.header {
+  height: 72px;
+  padding: 0 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.greeting {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
