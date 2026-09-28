@@ -6,7 +6,7 @@ function Sidebar() {
       <div className={styles.profile}>
         <div className={styles.avatar}>🎀</div>
 
-        <h2>성연's room</h2>
+        <h2>Dearly, Me</h2>
         <p>나의 작은 취향 공간</p>
       </div>
 
