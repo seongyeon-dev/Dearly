@@ -12,14 +12,12 @@ const categories = [
 function Sidebar() {
   return (
     <aside className={styles.sidebar}>
-      {/* 프로필 */}
       <NavLink to="/profile" className={styles.profile}>
         <div className={styles.avatar}>🎀</div>
         <h2>Dearly, Me</h2>
         <p>나의 위시리스트</p>
       </NavLink>
 
-      {/* 메뉴 */}
       <nav className={styles.navigation}>
         <NavLink
           to="/"
@@ -50,7 +48,6 @@ function Sidebar() {
         </NavLink>
       </nav>
 
-      {/* 카테고리 */}
       <div className={styles.categorySection}>
         <h3>카테고리</h3>
 
