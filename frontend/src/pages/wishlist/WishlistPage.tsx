@@ -1,5 +1,6 @@
 import WishCard from "../../components/WishCard/WishCard";
 import styles from "./WishlistPage.module.css";
+import WishFilter from "./WishFilter/WishFilter";
 
 const wishes = [
   {
@@ -12,7 +13,7 @@ const wishes = [
     id: 2,
     name: "데이지크 블러셔",
     price: 22000,
-    status: "구매함",
+    status: "샀어요",
   },
   {
     id: 3,
@@ -46,45 +47,17 @@ function WishlistPage() {
       <section className={styles.pageHeader}>
         <div>
           <h1>My Wishlist</h1>
-          <p>마음에 드는 아이템을 저장해보세요</p>
+          <p>위시부터 구매까지, 나의 취향을 기록해보세요</p>
         </div>
 
-        <button className={styles.addButton}>
-          + 상품 추가하기
-        </button>
+        <button className={styles.addButton}>+ 상품 추가하기</button>
       </section>
 
-      <section className={styles.filterArea}>
-        <div className={styles.categories}>
-          <button className={styles.activeCategory}>
-            전체 (6)
-          </button>
-
-          <button>뷰티 (3)</button>
-          <button>패션 (1)</button>
-          <button>라이프스타일 (1)</button>
-          <button>기타 (1)</button>
-        </div>
-
-        <div className={styles.viewOptions}>
-          <select>
-            <option>최신순</option>
-            <option>오래된순</option>
-            <option>가격 낮은순</option>
-            <option>가격 높은순</option>
-          </select>
-
-          <button className={styles.viewButton}>▦</button>
-          <button className={styles.viewButton}>☷</button>
-        </div>
-      </section>
+      <WishFilter />
 
       <section className={styles.cardGrid}>
         {wishes.map((wish) => (
-          <WishCard
-            key={wish.id}
-            wish={wish}
-          />
+          <WishCard key={wish.id} wish={wish} />
         ))}
       </section>
     </main>
