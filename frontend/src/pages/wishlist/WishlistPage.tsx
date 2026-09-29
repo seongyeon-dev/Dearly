@@ -1,6 +1,8 @@
+import { useState } from "react";
 import WishCard from "../../components/WishCard/WishCard";
 import styles from "./WishlistPage.module.css";
 import WishFilter from "./WishFilter/WishFilter";
+import WishCreateModal from "./WishCreateModal/WishCreateModal";
 
 const wishes = [
   {
@@ -42,6 +44,8 @@ const wishes = [
 ];
 
 function WishlistPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <main className={styles.page}>
       <section className={styles.pageHeader}>
@@ -50,16 +54,30 @@ function WishlistPage() {
           <p>위시부터 구매까지, 나의 취향을 기록해보세요</p>
         </div>
 
-        <button className={styles.addButton}>+ 상품 추가하기</button>
+        <button
+          className={styles.addButton}
+          onClick={() => setIsModalOpen(true)}
+        >
+          + 상품 추가하기
+        </button>
       </section>
 
       <WishFilter />
 
       <section className={styles.cardGrid}>
         {wishes.map((wish) => (
-          <WishCard key={wish.id} wish={wish} />
+          <WishCard
+            key={wish.id}
+            wish={wish}
+          />
         ))}
       </section>
+
+      {isModalOpen && (
+        <WishCreateModal
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
     </main>
   );
 }
