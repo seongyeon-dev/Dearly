@@ -1,0 +1,44 @@
+.imageSection {
+  width: 100%;
+}
+
+.imageUpload {
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-background);
+  cursor: pointer;
+}
+
+.imageUpload:hover {
+  border-color: var(--color-primary);
+}
+
+.imageUpload input {
+  display: none;
+}
+
+.cameraIcon {
+  margin-bottom: 10px;
+  font-size: 30px;
+}
+
+.imageUpload strong {
+  font-size: 14px;
+}
+
+.imageUpload p {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .imageUpload {
+    height: 200px;
+  }
+}
