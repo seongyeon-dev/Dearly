@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import styles from "./WishDetailForm.module.css";
 
 function WishDetailForm() {
+  const navigate = useNavigate();
+
   return (
     <div className={styles.infoSection}>
       <div className={styles.titleArea}>
@@ -14,20 +17,12 @@ function WishDetailForm() {
 
         <div className={styles.statusOptions}>
           <label>
-            <input
-              type="radio"
-              name="status"
-              value="WANT"
-            />
+            <input type="radio" name="status" value="WANT" />
             사고 싶어요
           </label>
 
           <label>
-            <input
-              type="radio"
-              name="status"
-              value="CONSIDERING"
-            />
+            <input type="radio" name="status" value="CONSIDERING" />
             고민 중
           </label>
 
@@ -87,7 +82,10 @@ function WishDetailForm() {
             수정하기
           </button>
 
-          <button className={styles.reviewButton}>
+          <button
+            className={styles.reviewButton}
+            onClick={() => navigate("review")}
+          >
             구매 후기 작성
           </button>
         </div>
