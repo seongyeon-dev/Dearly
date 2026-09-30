@@ -1,0 +1,163 @@
+.page {
+  flex: 1;
+  min-width: 0;
+  padding: 40px;
+}
+
+.reviewContainer {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pageHeader h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 24px;
+}
+
+.backButton {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background-color: transparent;
+  color: var(--color-text);
+  font-size: 22px;
+}
+
+.backButton:hover {
+  background-color: var(--color-primary-light);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.label,
+.reviewHeader label {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rating {
+  display: flex;
+  gap: 4px;
+}
+
+.star,
+.activeStar {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.star {
+  color: var(--color-border);
+}
+
+.activeStar {
+  color: var(--color-primary);
+}
+
+.reviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reviewHeader span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.formGroup textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+}
+
+.formGroup textarea:focus {
+  border-color: var(--color-primary);
+}
+
+.formGroup textarea::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.buttonArea {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 22px;
+  border-top: 1px solid var(--color-border);
+}
+
+.cancelButton,
+.submitButton {
+  height: 46px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cancelButton {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.cancelButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.submitButton {
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.submitButton:hover {
+  background-color: var(--color-primary-hover);
+}
+
+@media (max-width: 700px) {
+  .page {
+    padding: 20px;
+  }
+
+  .pageHeader h1 {
+    font-size: 21px;
+  }
+
+  .rating button {
+    font-size: 28px;
+  }
+
+  .formGroup textarea {
+    min-height: 140px;
+  }
+}
