@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import styles from "./WishCard.module.css";
 
 type Wish = {
@@ -12,10 +13,25 @@ type WishCardProps = {
 };
 
 function WishCard({ wish }: WishCardProps) {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/wishlist/${wish.id}`);
+  };
+
   return (
-    <article className={styles.card}>
+    <article
+      className={styles.card}
+      onClick={handleCardClick}
+    >
       <div className={styles.imageArea}>
-        <button className={styles.heartButton}>♡</button>
+        <button
+          className={styles.heartButton}
+          onClick={(e) => e.stopPropagation()}
+        >
+          ♡
+        </button>
+
         <span>이미지</span>
       </div>
 
@@ -28,7 +44,10 @@ function WishCard({ wish }: WishCardProps) {
           {wish.price.toLocaleString()}원
         </p>
 
-        <button className={styles.statusButton}>
+        <button
+          className={styles.statusButton}
+          onClick={(e) => e.stopPropagation()}
+        >
           {wish.status}
           <span>⌄</span>
         </button>
