@@ -1,0 +1,30 @@
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.categories button {
+  padding: 9px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.categories button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.categories .activeCategory {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: white;
+}
+
+@media (max-width: 700px) {
+  .categories {
+    flex-wrap: wrap;
+  }
+}

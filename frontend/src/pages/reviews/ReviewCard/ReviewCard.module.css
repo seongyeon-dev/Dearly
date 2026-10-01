@@ -1,0 +1,166 @@
+.reviewCard {
+  min-width: 0;
+  overflow: hidden;
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  background-color: var(--color-surface);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.reviewCard:hover {
+  transform: translateY(-4px);
+
+  border-color: var(--color-primary-light);
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.productImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  aspect-ratio: 16 / 10;
+
+  background-color: var(--color-primary-light);
+
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+
+  min-height: 240px;
+  padding: 18px;
+}
+
+.category {
+  width: fit-content;
+
+  margin-bottom: 10px;
+  padding: 4px 8px;
+
+  border-radius: 6px;
+
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cardContent h2 {
+  display: -webkit-box;
+  overflow: hidden;
+
+  margin: 0 0 7px;
+
+  color: var(--color-text);
+
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.productName {
+  overflow: hidden;
+
+  margin: 0 0 4px;
+
+  color: var(--color-text-secondary);
+
+  font-size: 13px;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.price {
+  margin-bottom: 12px;
+
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 12px;
+}
+
+.rating div {
+  display: flex;
+  gap: 2px;
+
+  color: var(--color-primary);
+  font-size: 17px;
+}
+
+.rating strong {
+  color: var(--color-primary);
+  font-size: 12px;
+}
+
+.reviewPreview {
+  display: -webkit-box;
+  overflow: hidden;
+
+  margin: 0 0 18px;
+
+  color: var(--color-text);
+
+  font-size: 13px;
+  line-height: 1.6;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.date {
+  margin-top: auto;
+
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+@media (max-width: 700px) {
+  .productImage {
+    aspect-ratio: 16 / 10;
+  }
+
+  .cardContent {
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .cardContent h2 {
+    font-size: 16px;
+  }
+
+  .productName {
+    font-size: 13px;
+  }
+
+  .reviewPreview {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}
