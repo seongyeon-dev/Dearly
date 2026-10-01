@@ -1,15 +1,10 @@
 import styles from "./WishFilter.module.css";
+import CategoryFilter from "../../../components/CategoryFilter/CategoryFilter";
 
 function WishFilter() {
   return (
     <section className={styles.filterArea}>
-      <div className={styles.categories}>
-        <button className={styles.activeCategory}>전체 (6)</button>
-        <button>뷰티 (3)</button>
-        <button>패션 (1)</button>
-        <button>라이프스타일 (1)</button>
-        <button>기타 (1)</button>
-      </div>
+      <CategoryFilter />
 
       <div className={styles.viewOptions}>
         <select>
