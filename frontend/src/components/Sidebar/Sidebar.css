@@ -1,0 +1,130 @@
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: calc(100vh - 60px);
+
+  padding: 28px 16px;
+
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.sidebar-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  margin-bottom: 30px;
+}
+
+.profile-image {
+  width: 72px;
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 12px;
+
+  background-color: var(--color-primary-light);
+  border-radius: 50%;
+
+  font-size: 30px;
+}
+
+.profile-name {
+  margin-bottom: 5px;
+
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-description {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-link {
+  width: 100%;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 0 14px;
+
+  color: var(--color-text-sub);
+  font-size: 12px;
+
+  border-radius: var(--radius-medium);
+
+  transition: 0.2s;
+}
+
+.sidebar-link:hover {
+  background-color: var(--color-primary-bg);
+}
+
+.sidebar-link.active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  font-weight: 500;
+}
+
+.menu-icon {
+  width: 16px;
+
+  text-align: center;
+  font-size: 15px;
+}
+
+.sidebar-divider {
+  width: 100%;
+  height: 1px;
+
+  margin: 24px 0;
+
+  background-color: var(--color-border);
+}
+
+.sidebar-category h3 {
+  margin: 0 0 14px 8px;
+
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sidebar-category {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-category button {
+  width: 100%;
+
+  padding: 8px;
+
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+
+  text-align: left;
+  font-size: 11px;
+
+  border-radius: var(--radius-small);
+}
+
+.sidebar-category button:hover {
+  color: var(--color-primary);
+  background-color: var(--color-primary-bg);
+}
