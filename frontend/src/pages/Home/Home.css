@@ -53,6 +53,7 @@
 
 .recent-wishlist {
   width: 100%;
+  min-width: 0;
 }
 
 .wishlist-header {
@@ -77,6 +78,7 @@
   border: none;
   font-size: 11px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .wishlist-grid {
@@ -100,13 +102,27 @@
 }
 
 @media (max-width: 768px) {
+  .home {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
   .home-container {
-    padding: 20px 16px 32px;
+    width: 100%;
+    max-width: 100%;
+    padding: 20px 12px 32px;
   }
 
   .home-header {
-    gap: 12px;
+    width: 100%;
+    align-items: flex-start;
+    gap: 10px;
     margin-bottom: 20px;
+  }
+
+  .home-header > div {
+    min-width: 0;
   }
 
   .home-header h1 {
@@ -119,22 +135,71 @@
   }
 
   .month-select {
+    max-width: 110px;
     height: 34px;
-    padding: 0 9px;
+    flex-shrink: 0;
+    padding: 0 8px;
     font-size: 9px;
   }
 
   .dashboard-summary {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
     margin-bottom: 28px;
   }
 
+  .dashboard-summary > * {
+    min-width: 0;
+  }
+
+  .recent-wishlist {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .wishlist-header {
+    gap: 10px;
+  }
+
   .wishlist-header h2 {
+    min-width: 0;
     font-size: 16px;
   }
 
   .wishlist-grid {
+    width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    padding: 18px 10px 28px;
+  }
+
+  .home-header h1 {
+    font-size: 18px;
+  }
+
+  .home-header p {
+    font-size: 9px;
+  }
+
+  .month-select {
+    max-width: 100px;
+    height: 32px;
+    font-size: 8px;
+  }
+
+  .wishlist-header h2 {
+    font-size: 14px;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 }
