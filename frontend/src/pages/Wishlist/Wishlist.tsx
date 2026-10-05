@@ -106,13 +106,18 @@ function Wishlist() {
           className={`wishlist-items ${viewType === "list" ? "list-view" : ""}`}
         >
           {wishlistItems.map((item) => (
-            <WishlistCard
+            <div
               key={item.id}
-              name={item.name}
-              price={item.price}
-              status={item.status}
-              statusClass={item.statusClass}
-            />
+              className="wishlist-card-link"
+              onClick={() => navigate(`/wishlist/${item.id}`)}
+            >
+              <WishlistCard
+                name={item.name}
+                price={item.price}
+                status={item.status}
+                statusClass={item.statusClass}
+              />
+            </div>
           ))}
         </section>
       </div>
