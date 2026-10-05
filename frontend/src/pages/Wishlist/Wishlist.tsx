@@ -1,5 +1,6 @@
 import { Grid2X2, List } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
 import "./Wishlist.css";
@@ -50,6 +51,8 @@ const wishlistItems = [
 ];
 
 function Wishlist() {
+  const navigate = useNavigate();
+
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
 
   return (
@@ -61,7 +64,11 @@ function Wishlist() {
             <p>사고 싶은 것들을 모아보세요.</p>
           </div>
 
-          <button type="button" className="add-wish-button">
+          <button
+            type="button"
+            className="add-wish-button"
+            onClick={() => navigate("/wishlist/new")}
+          >
             + 상품 추가하기
           </button>
         </section>
@@ -96,9 +103,7 @@ function Wishlist() {
         </section>
 
         <section
-          className={`wishlist-items ${
-            viewType === "list" ? "list-view" : ""
-          }`}
+          className={`wishlist-items ${viewType === "list" ? "list-view" : ""}`}
         >
           {wishlistItems.map((item) => (
             <WishlistCard
