@@ -1,0 +1,71 @@
+.product-image h2 {
+  margin: 0 0 12px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.image-upload {
+  width: 100%;
+  height: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--color-text-muted);
+  background-color: var(--color-primary-bg);
+  border: 1px dashed #eccfd5;
+  border-radius: var(--radius-medium);
+  cursor: pointer;
+}
+
+.image-upload:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.image-upload strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.image-upload span {
+  font-size: 9px;
+}
+
+.image-preview-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.image-preview {
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #d8c7cb;
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+
+.image-preview:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+  .product-image {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .image-upload {
+    height: 190px;
+  }
+}
