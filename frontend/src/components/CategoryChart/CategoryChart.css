@@ -1,0 +1,126 @@
+.category-card {
+  padding: 24px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+
+.category-card h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.category-content {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.donut-chart {
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(
+    #d77f8f 0% 45%,
+    #c9a0dc 45% 70%,
+    #aaa3e5 70% 90%,
+    #ead7d9 90% 100%
+  );
+  border-radius: 50%;
+}
+
+.donut-center {
+  width: 65px;
+  height: 65px;
+  background-color: var(--color-surface);
+  border-radius: 50%;
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-list > div {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.category-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.category-dot.beauty {
+  background-color: #d77f8f;
+}
+
+.category-dot.fashion {
+  background-color: #c9a0dc;
+}
+
+.category-dot.lifestyle {
+  background-color: #aaa3e5;
+}
+
+.category-dot.other {
+  background-color: #ead7d9;
+}
+
+.category-list span,
+.category-list strong {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.category-list strong {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .category-card {
+    padding: 18px;
+  }
+
+  .category-card h2 {
+    font-size: 16px;
+  }
+
+  .category-content {
+    min-height: auto;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 22px;
+  }
+
+  .donut-chart {
+    width: 105px;
+    height: 105px;
+  }
+
+  .donut-center {
+    width: 58px;
+    height: 58px;
+  }
+
+  .category-list {
+    flex: 1;
+  }
+
+  .category-list > div {
+    min-width: 0;
+  }
+}
