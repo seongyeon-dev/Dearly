@@ -96,17 +96,17 @@
   background-color: var(--color-border);
 }
 
+.sidebar-category {
+  display: flex;
+  flex-direction: column;
+}
+
 .sidebar-category h3 {
   margin: 0 0 14px 8px;
 
   color: var(--color-text);
   font-size: 11px;
   font-weight: 600;
-}
-
-.sidebar-category {
-  display: flex;
-  flex-direction: column;
 }
 
 .sidebar-category button {
@@ -127,4 +127,46 @@
 .sidebar-category button:hover {
   color: var(--color-primary);
   background-color: var(--color-primary-bg);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 56px;
+    min-width: 56px;
+    padding: 20px 8px;
+  }
+
+  .sidebar-profile {
+    display: none;
+  }
+
+  .sidebar-menu {
+    gap: 8px;
+  }
+
+  .sidebar-link {
+    width: 40px;
+    height: 40px;
+
+    justify-content: center;
+
+    padding: 0;
+  }
+
+  .sidebar-link span {
+    display: none;
+  }
+
+  .sidebar-link svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .sidebar-divider {
+    display: none;
+  }
+
+  .sidebar-category {
+    display: none;
+  }
 }
