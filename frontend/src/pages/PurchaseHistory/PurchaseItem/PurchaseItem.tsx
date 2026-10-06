@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
+
 import "./PurchaseItem.css";
 
 type PurchaseItemProps = {
+  wishId: number;
   image?: string;
   name: string;
   category: string;
@@ -9,14 +12,21 @@ type PurchaseItemProps = {
 };
 
 function PurchaseItem({
+  wishId,
   image,
   name,
   category,
   date,
   price,
 }: PurchaseItemProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/wishlist/${wishId}`);
+  };
+
   return (
-    <article className="purchase-item">
+    <button type="button" className="purchase-item" onClick={handleClick}>
       <div className="purchase-image">
         {image ? <img src={image} alt={name} /> : <span>이미지</span>}
       </div>
@@ -32,7 +42,7 @@ function PurchaseItem({
       </div>
 
       <strong className="purchase-price">{price}</strong>
-    </article>
+    </button>
   );
 }
 
