@@ -1,11 +1,11 @@
-import { NavLink } from "react-router-dom";
 import {
-  House,
-  Heart,
-  ReceiptText,
   ChartNoAxesColumnIncreasing,
+  Heart,
+  Home,
+  ReceiptText,
   UserRound,
 } from "lucide-react";
+import { NavLink } from "react-router-dom";
 
 import "./Sidebar.css";
 
@@ -13,37 +13,37 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-profile">
-        <div className="profile-image">
-          <span>🎀</span>
+        <div className="sidebar-profile-image">
+          <span className="sidebar-profile-ribbon">🎀</span>
         </div>
 
-        <strong className="profile-name">Dearly, Me</strong>
-        <span className="profile-description">나의 위시리스트</span>
+        <strong className="sidebar-profile-name">Dearly, Me</strong>
+        <span className="sidebar-profile-description">나의 위시리스트</span>
       </div>
 
       <nav className="sidebar-menu">
         <NavLink to="/" className="sidebar-link">
-          <House size={16} strokeWidth={1.5} />
+          <Home className="menu-icon" size={16} />
           <span>홈</span>
         </NavLink>
 
         <NavLink to="/wishlist" className="sidebar-link">
-          <Heart size={16} strokeWidth={1.5} />
+          <Heart className="menu-icon" size={16} />
           <span>위시리스트</span>
         </NavLink>
 
         <NavLink to="/purchases" className="sidebar-link">
-          <ReceiptText size={16} strokeWidth={1.5} />
+          <ReceiptText className="menu-icon" size={16} />
           <span>소비 기록</span>
         </NavLink>
 
         <NavLink to="/statistics" className="sidebar-link">
-          <ChartNoAxesColumnIncreasing size={16} strokeWidth={1.5} />
+          <ChartNoAxesColumnIncreasing className="menu-icon" size={16} />
           <span>소비 통계</span>
         </NavLink>
 
         <NavLink to="/profile" className="sidebar-link">
-          <UserRound size={16} strokeWidth={1.5} />
+          <UserRound className="menu-icon" size={16} />
           <span>프로필 수정</span>
         </NavLink>
       </nav>

@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import Home from "../pages/Home/Home";
 import ProductCreate from "../pages/ProductCreate/ProductCreate";
 import ProductDetail from "../pages/ProductDetail/ProductDetail";
+import Profile from "../pages/Profile/Profile";
 import PurchaseHistory from "../pages/PurchaseHistory/PurchaseHistory";
 import Statistics from "../pages/Statistics/Statistics";
 import Wishlist from "../pages/Wishlist/Wishlist";
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/wishlist/:wishId" element={<ProductDetail />} />
       <Route path="/purchases" element={<PurchaseHistory />} />
       <Route path="/statistics" element={<Statistics />} />
+      <Route path="/profile" element={<Profile />} />
     </Routes>
   );
 }
