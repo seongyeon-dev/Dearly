@@ -4,7 +4,7 @@ function Header() {
   return (
     <header className="header">
       <div className="header-logo">Dearly</div>
-      <span className="header-text">Wishlist & Spending</span>
+      <span className="header-text">Wishlist & Budget</span>
     </header>
   );
 }
