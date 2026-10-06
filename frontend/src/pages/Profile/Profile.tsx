@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 
 import ProfileImage from "./ProfileImage/ProfileImage";
 
@@ -6,10 +6,9 @@ import "./Profile.css";
 
 function Profile() {
   const [nickname, setNickname] = useState("성연");
-  const [introduction, setIntroduction] =
-    useState("나의 취향을 기록하는 공간");
+  const [introduction, setIntroduction] = useState("나의 취향을 기록하는 공간");
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     console.log({
