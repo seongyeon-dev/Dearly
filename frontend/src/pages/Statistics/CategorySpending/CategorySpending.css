@@ -1,0 +1,135 @@
+.category-spending-card {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 24px;
+  box-sizing: border-box;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+}
+
+.category-spending-card h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.category-spending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.category-spending-item {
+  display: grid;
+  grid-template-columns: 85px minmax(70px, 1fr) 90px;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-name {
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.category-progress {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  background-color: var(--color-primary-bg);
+  border-radius: 999px;
+}
+
+.category-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.category-progress-bar.beauty {
+  background-color: var(--color-primary);
+}
+
+.category-progress-bar.fashion {
+  background-color: #ef91ad;
+}
+
+.category-progress-bar.lifestyle {
+  background-color: #c8a9ed;
+}
+
+.category-progress-bar.other {
+  background-color: #e8c9d5;
+}
+
+.category-spending-item strong {
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.category-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+.category-total span {
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.category-total strong {
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .category-spending-item {
+    grid-template-columns: 75px minmax(50px, 1fr) 80px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .category-spending-card {
+    padding: 18px 14px;
+  }
+
+  .category-spending-card h2 {
+    font-size: 15px;
+  }
+
+  .category-spending-item {
+    grid-template-columns: 65px minmax(40px, 1fr) 72px;
+  }
+
+  .category-name,
+  .category-spending-item strong {
+    font-size: 9px;
+  }
+
+  .category-total {
+    margin-top: 20px;
+    padding-top: 15px;
+  }
+
+  .category-total span {
+    font-size: 10px;
+  }
+
+  .category-total strong {
+    font-size: 11px;
+  }
+}
