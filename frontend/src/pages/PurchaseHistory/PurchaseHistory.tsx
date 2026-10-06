@@ -28,6 +28,7 @@ function PurchaseHistory() {
 
           <div className="purchase-list">
             <PurchaseItem
+              wishId={1}
               name="롬앤 쥬시래스팅 틴트"
               category="뷰티"
               date="2026.09.30"
@@ -35,6 +36,7 @@ function PurchaseHistory() {
             />
 
             <PurchaseItem
+              wishId={2}
               name="에스트라 아토베리어 크림"
               category="뷰티"
               date="2026.09.28"
@@ -42,6 +44,7 @@ function PurchaseHistory() {
             />
 
             <PurchaseItem
+              wishId={3}
               name="나이키 에어포스 1"
               category="패션"
               date="2026.09.20"
@@ -49,6 +52,7 @@ function PurchaseHistory() {
             />
 
             <PurchaseItem
+              wishId={4}
               name="무인양품 테이블 조명"
               category="라이프스타일"
               date="2026.09.15"
