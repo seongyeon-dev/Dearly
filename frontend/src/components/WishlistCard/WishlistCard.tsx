@@ -1,13 +1,14 @@
 import { Heart } from "lucide-react";
 
+import type { WishStatus, WishStatusClass } from "../../types/wish";
 import "./WishlistCard.css";
 
 type WishlistCardProps = {
   image?: string;
   name: string;
   price: string;
-  status: string;
-  statusClass: "want" | "considering" | "bought";
+  status: WishStatus;
+  statusClass: WishStatusClass;
 };
 
 function WishlistCard({
