@@ -1,14 +1,11 @@
 import { useNavigate } from "react-router-dom";
 
+import type { Purchase } from "../../../types/purchase";
+
 import "./PurchaseItem.css";
 
-type PurchaseItemProps = {
-  wishId: number;
+type PurchaseItemProps = Purchase & {
   image?: string;
-  name: string;
-  category: string;
-  date: string;
-  price: string;
 };
 
 function PurchaseItem({

@@ -1,6 +1,40 @@
+import type { Purchase } from "../../types/purchase";
+
 import PurchaseItem from "./PurchaseItem/PurchaseItem";
 import PurchaseSummary from "./PurchaseSummary/PurchaseSummary";
+
 import "./PurchaseHistory.css";
+
+const purchaseItems: Purchase[] = [
+  {
+    wishId: 1,
+    name: "롬앤 쥬시래스팅 틴트",
+    category: "뷰티",
+    date: "2026.09.30",
+    price: "13,000원",
+  },
+  {
+    wishId: 2,
+    name: "에스트라 아토베리어 크림",
+    category: "뷰티",
+    date: "2026.09.28",
+    price: "32,000원",
+  },
+  {
+    wishId: 3,
+    name: "나이키 에어포스 1",
+    category: "패션",
+    date: "2026.09.20",
+    price: "139,000원",
+  },
+  {
+    wishId: 4,
+    name: "무인양품 테이블 조명",
+    category: "라이프스타일",
+    date: "2026.09.15",
+    price: "59,000원",
+  },
+];
 
 function PurchaseHistory() {
   return (
@@ -27,37 +61,16 @@ function PurchaseHistory() {
           </div>
 
           <div className="purchase-list">
-            <PurchaseItem
-              wishId={1}
-              name="롬앤 쥬시래스팅 틴트"
-              category="뷰티"
-              date="2026.09.30"
-              price="13,000원"
-            />
-
-            <PurchaseItem
-              wishId={2}
-              name="에스트라 아토베리어 크림"
-              category="뷰티"
-              date="2026.09.28"
-              price="32,000원"
-            />
-
-            <PurchaseItem
-              wishId={3}
-              name="나이키 에어포스 1"
-              category="패션"
-              date="2026.09.20"
-              price="139,000원"
-            />
-
-            <PurchaseItem
-              wishId={4}
-              name="무인양품 테이블 조명"
-              category="라이프스타일"
-              date="2026.09.15"
-              price="59,000원"
-            />
+            {purchaseItems.map((item) => (
+              <PurchaseItem
+                key={item.wishId}
+                wishId={item.wishId}
+                name={item.name}
+                category={item.category}
+                date={item.date}
+                price={item.price}
+              />
+            ))}
           </div>
         </section>
       </div>
