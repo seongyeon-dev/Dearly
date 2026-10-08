@@ -1,39 +1,40 @@
 import { useNavigate } from "react-router-dom";
 
-import MonthlySummary from "./MonthlySummary/MonthlySummary";
 import CategoryChart from "../../components/CategoryChart/CategoryChart";
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
+import type { Wish } from "../../types/wish";
+import MonthlySummary from "./MonthlySummary/MonthlySummary";
 
 import "./Home.css";
 
-const wishlistItems = [
+const wishlistItems: Wish[] = [
   {
     id: 1,
     name: "롬앤 쥬시래스팅 틴트",
     price: "13,000원",
     status: "사고 싶어요",
-    statusClass: "want" as const,
+    statusClass: "want",
   },
   {
     id: 2,
     name: "에스트라 아토베리어 크림",
     price: "32,000원",
     status: "고민 중",
-    statusClass: "considering" as const,
+    statusClass: "considering",
   },
   {
     id: 3,
     name: "나이키 에어포스 1",
     price: "139,000원",
     status: "샀어요",
-    statusClass: "bought" as const,
+    statusClass: "bought",
   },
   {
     id: 4,
     name: "무인양품 테이블 조명",
     price: "59,000원",
     status: "사고 싶어요",
-    statusClass: "want" as const,
+    statusClass: "want",
   },
 ];
 
