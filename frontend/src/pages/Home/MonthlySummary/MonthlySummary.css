@@ -101,6 +101,35 @@
   font-size: 9px;
 }
 
+.budget-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.budget-label span {
+  margin-bottom: 0;
+}
+
+.budget-edit-button {
+  padding: 3px 6px;
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  border: none;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.budget-edit-button:hover {
+  background-color: var(--color-primary-bg);
+}
+
 .budget-progress {
   margin-top: 28px;
 }
@@ -124,6 +153,7 @@
   height: 100%;
   background-color: var(--color-primary);
   border-radius: 20px;
+  transition: width 0.3s ease;
 }
 
 .progress-row > strong {
