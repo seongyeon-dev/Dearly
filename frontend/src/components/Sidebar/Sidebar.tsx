@@ -5,11 +5,24 @@ import {
   ReceiptText,
   UserRound,
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 import "./Sidebar.css";
 
+const categories = [
+  { name: "전체", value: null },
+  { name: "뷰티", value: "BEAUTY" },
+  { name: "패션", value: "FASHION" },
+  { name: "라이프스타일", value: "LIFESTYLE" },
+  { name: "기타", value: "OTHER" },
+];
+
 function Sidebar() {
+  const location = useLocation();
+
+  const searchParams = new URLSearchParams(location.search);
+  const selectedCategory = searchParams.get("category");
+
   return (
     <aside className="sidebar">
       <div className="sidebar-profile">
@@ -22,7 +35,7 @@ function Sidebar() {
       </div>
 
       <nav className="sidebar-menu">
-        <NavLink to="/" className="sidebar-link">
+        <NavLink to="/" className="sidebar-link" end>
           <Home className="menu-icon" size={16} />
           <span>홈</span>
         </NavLink>
@@ -53,11 +66,27 @@ function Sidebar() {
       <div className="sidebar-category">
         <h3>카테고리</h3>
 
-        <button type="button">전체</button>
-        <button type="button">뷰티</button>
-        <button type="button">패션</button>
-        <button type="button">라이프스타일</button>
-        <button type="button">기타</button>
+        {categories.map((category) => {
+          const path = category.value
+            ? `/wishlist?category=${category.value}`
+            : "/wishlist";
+
+          const isActive =
+            location.pathname === "/wishlist" &&
+            selectedCategory === category.value;
+
+          return (
+            <NavLink
+              key={category.name}
+              to={path}
+              className={() =>
+                `sidebar-category-link ${isActive ? "active" : ""}`
+              }
+            >
+              {category.name}
+            </NavLink>
+          );
+        })}
       </div>
     </aside>
   );
