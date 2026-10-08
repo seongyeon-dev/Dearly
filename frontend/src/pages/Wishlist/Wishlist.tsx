@@ -1,9 +1,9 @@
 import { Grid2X2, List } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
-import type { Wish } from "../../types/wish";
+import type { Wish, WishCategory } from "../../types/wish";
 import "./Wishlist.css";
 
 const wishlistItems: Wish[] = [
@@ -11,6 +11,7 @@ const wishlistItems: Wish[] = [
     id: 1,
     name: "롬앤 쥬시래스팅 틴트",
     price: "13,000원",
+    category: "BEAUTY",
     status: "사고 싶어요",
     statusClass: "want",
   },
@@ -18,6 +19,7 @@ const wishlistItems: Wish[] = [
     id: 2,
     name: "에스트라 아토베리어 크림",
     price: "32,000원",
+    category: "BEAUTY",
     status: "고민 중",
     statusClass: "considering",
   },
@@ -25,6 +27,7 @@ const wishlistItems: Wish[] = [
     id: 3,
     name: "나이키 에어포스 1",
     price: "139,000원",
+    category: "FASHION",
     status: "샀어요",
     statusClass: "bought",
   },
@@ -32,6 +35,7 @@ const wishlistItems: Wish[] = [
     id: 4,
     name: "클리오 킬커버 쿠션",
     price: "32,000원",
+    category: "BEAUTY",
     status: "고민 중",
     statusClass: "considering",
   },
@@ -39,6 +43,7 @@ const wishlistItems: Wish[] = [
     id: 5,
     name: "무인양품 테이블 조명",
     price: "59,000원",
+    category: "LIFESTYLE",
     status: "사고 싶어요",
     statusClass: "want",
   },
@@ -46,15 +51,39 @@ const wishlistItems: Wish[] = [
     id: 6,
     name: "폴로 케이블 니트",
     price: "169,000원",
+    category: "FASHION",
     status: "사고 싶어요",
     statusClass: "want",
   },
 ];
 
+const categoryNames: Record<WishCategory, string> = {
+  BEAUTY: "뷰티",
+  FASHION: "패션",
+  LIFESTYLE: "라이프스타일",
+  OTHER: "기타",
+};
+
 function Wishlist() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
+
+  const categoryParam = searchParams.get("category");
+
+  const selectedCategory =
+    categoryParam && Object.keys(categoryNames).includes(categoryParam)
+      ? (categoryParam as WishCategory)
+      : null;
+
+  const filteredItems = wishlistItems.filter((item) => {
+    if (!selectedCategory) {
+      return true;
+    }
+
+    return item.category === selectedCategory;
+  });
 
   return (
     <main className="wishlist-page">
@@ -106,20 +135,24 @@ function Wishlist() {
         <section
           className={`wishlist-items ${viewType === "list" ? "list-view" : ""}`}
         >
-          {wishlistItems.map((item) => (
-            <div
-              key={item.id}
-              className="wishlist-card-link"
-              onClick={() => navigate(`/wishlist/${item.id}`)}
-            >
-              <WishlistCard
-                name={item.name}
-                price={item.price}
-                status={item.status}
-                statusClass={item.statusClass}
-              />
-            </div>
-          ))}
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => (
+              <div
+                key={item.id}
+                className="wishlist-card-link"
+                onClick={() => navigate(`/wishlist/${item.id}`)}
+              >
+                <WishlistCard
+                  name={item.name}
+                  price={item.price}
+                  status={item.status}
+                  statusClass={item.statusClass}
+                />
+              </div>
+            ))
+          ) : (
+            <p>등록된 상품이 없습니다.</p>
+          )}
         </section>
       </div>
     </main>
