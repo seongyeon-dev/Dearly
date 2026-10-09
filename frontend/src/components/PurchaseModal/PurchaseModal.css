@@ -1,0 +1,244 @@
+.purchase-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(38, 48, 71, 0.42);
+}
+
+.purchase-modal {
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #eae4e2;
+  border-radius: 18px;
+  box-shadow: 0 16px 48px rgba(38, 48, 71, 0.14);
+}
+
+.purchase-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 24px 18px;
+}
+
+.purchase-modal-header h2 {
+  margin: 0 0 6px;
+  color: #263047;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.purchase-modal-header p {
+  margin: 0;
+  color: #8b8b96;
+  font-size: 13px;
+}
+
+.purchase-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #8b8b96;
+  cursor: pointer;
+}
+
+.purchase-modal-close:hover {
+  background: #fcecef;
+  color: #d9879a;
+}
+
+.purchase-modal-product {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 24px 22px;
+  padding: 16px;
+  border: 1px solid #f5dfe5;
+  border-radius: 12px;
+  background: #fff9f8;
+}
+
+.purchase-modal-product-label {
+  color: #d9879a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.purchase-modal-product strong {
+  color: #263047;
+  font-size: 15px;
+}
+
+.purchase-modal-product > span:last-child {
+  color: #777b87;
+  font-size: 13px;
+}
+
+.purchase-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 24px;
+}
+
+.purchase-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.purchase-modal-field label {
+  color: #263047;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.purchase-required {
+  color: #e56a83;
+}
+
+.purchase-optional {
+  color: #9a9aa3;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.purchase-modal-field input,
+.purchase-modal-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #eae4e2;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #263047;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.purchase-modal-field input {
+  height: 44px;
+  padding: 0 13px;
+}
+
+.purchase-modal-field textarea {
+  min-height: 90px;
+  padding: 12px 13px;
+  resize: vertical;
+}
+
+.purchase-modal-field input:focus,
+.purchase-modal-field textarea:focus {
+  border-color: #d9879a;
+  box-shadow: 0 0 0 3px rgba(217, 135, 154, 0.12);
+}
+
+.purchase-modal-field input::placeholder,
+.purchase-modal-field textarea::placeholder {
+  color: #b4b1b7;
+}
+
+.purchase-modal-input-wrap {
+  position: relative;
+}
+
+.purchase-modal-input-wrap input {
+  padding-right: 44px;
+}
+
+.purchase-modal-input-wrap > span {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  color: #777b87;
+  font-size: 13px;
+}
+
+.purchase-date-icon {
+  display: none;
+}
+
+.purchase-modal-count {
+  align-self: flex-end;
+  color: #a1a1aa;
+  font-size: 11px;
+}
+
+.purchase-modal-error {
+  margin: 0;
+  color: #d94c65;
+  font-size: 12px;
+}
+
+.purchase-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 24px;
+}
+
+.purchase-modal-footer button {
+  flex: 1;
+  height: 44px;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.purchase-modal-cancel {
+  border: 1px solid #eae4e2;
+  background: #ffffff;
+  color: #626675;
+}
+
+.purchase-modal-cancel:hover {
+  background: #fff9f8;
+}
+
+.purchase-modal-save {
+  border: 1px solid #d9879a;
+  background: #d9879a;
+  color: #ffffff;
+}
+
+.purchase-modal-save:hover {
+  background: #c67589;
+}
+
+@media (max-width: 480px) {
+  .purchase-modal {
+    border-radius: 14px;
+  }
+
+  .purchase-modal-header {
+    padding: 20px 18px 16px;
+  }
+
+  .purchase-modal-product {
+    margin: 0 18px 20px;
+  }
+
+  .purchase-modal-body {
+    padding: 0 18px;
+  }
+
+  .purchase-modal-footer {
+    padding: 20px 18px;
+  }
+}
