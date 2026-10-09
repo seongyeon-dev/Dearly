@@ -64,11 +64,66 @@ const categoryNames: Record<WishCategory, string> = {
   OTHER: "기타",
 };
 
+type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
+
+const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
+  WANT: {
+    status: "사고 싶어요",
+    statusClass: "want",
+  },
+  CONSIDERING: {
+    status: "고민 중",
+    statusClass: "considering",
+  },
+  BOUGHT: {
+    status: "샀어요",
+    statusClass: "bought",
+  },
+};
+
+function isProductStatus(value: unknown): value is ProductStatus {
+  return value === "WANT" || value === "CONSIDERING" || value === "BOUGHT";
+}
+
+function getWishlistItems(): Wish[] {
+  return wishlistItems.map((item): Wish => {
+    const storageKey = `dearly-product-detail-${item.id}`;
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+
+      if (!saved) {
+        return item;
+      }
+
+      const product: unknown = JSON.parse(saved);
+
+      if (
+        typeof product !== "object" ||
+        product === null ||
+        !("status" in product) ||
+        !isProductStatus(product.status)
+      ) {
+        return item;
+      }
+
+      return {
+        ...item,
+        ...statusMap[product.status],
+      };
+    } catch {
+      return item;
+    }
+  });
+}
+
 function Wishlist() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
+
+  const items = getWishlistItems();
 
   const categoryParam = searchParams.get("category");
 
@@ -77,7 +132,7 @@ function Wishlist() {
       ? (categoryParam as WishCategory)
       : null;
 
-  const filteredItems = wishlistItems.filter((item) => {
+  const filteredItems = items.filter((item) => {
     if (!selectedCategory) {
       return true;
     }
