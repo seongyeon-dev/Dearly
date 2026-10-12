@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import CategoryChart from "../../components/CategoryChart/CategoryChart";
 import MonthSelector from "../../components/MonthSelector/MonthSelector";
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
-import { products } from "../../data/products";
 import type { Wish } from "../../types/wish";
+import { getWishlistProducts } from "../../utils/wishlistStorage";
 import MonthlySummary from "./MonthlySummary/MonthlySummary";
 
 import "./Home.css";
@@ -56,7 +56,7 @@ function getDeletedProductIds(): number[] {
 function getRecentWishlistItems(): Wish[] {
   const deletedIds = getDeletedProductIds();
 
-  return products
+  return getWishlistProducts()
     .filter((item) => !deletedIds.includes(item.id))
     .map((item): Wish => {
       try {
@@ -85,6 +85,7 @@ function getRecentWishlistItems(): Wish[] {
         return item;
       }
     })
+    .sort((a, b) => b.id - a.id)
     .slice(0, 4);
 }
 
@@ -144,6 +145,7 @@ function Home() {
                   style={{ cursor: "pointer" }}
                 >
                   <WishlistCard
+                    productId={item.id}
                     name={item.name}
                     price={item.price}
                     status={item.status}
