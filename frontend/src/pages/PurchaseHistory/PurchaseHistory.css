@@ -146,3 +146,11 @@
     font-size: 16px;
   }
 }
+
+.purchase-empty-message {
+  width: 100%;
+  padding: 48px 20px;
+  color: #8d8d98;
+  font-size: 14px;
+  text-align: center;
+}
