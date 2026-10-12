@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import CategoryChart from "../../components/CategoryChart/CategoryChart";
+import MonthSelector from "../../components/MonthSelector/MonthSelector";
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
 import type { Wish } from "../../types/wish";
 import MonthlySummary from "./MonthlySummary/MonthlySummary";
@@ -33,7 +35,7 @@ const wishlistItems: Wish[] = [
     statusClass: "bought",
   },
   {
-    id: 4,
+    id: 5,
     name: "무인양품 테이블 조명",
     price: "59,000원",
     category: "LIFESTYLE",
@@ -42,8 +44,98 @@ const wishlistItems: Wish[] = [
   },
 ];
 
+type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
+
+const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
+  WANT: {
+    status: "사고 싶어요",
+    statusClass: "want",
+  },
+  CONSIDERING: {
+    status: "고민 중",
+    statusClass: "considering",
+  },
+  BOUGHT: {
+    status: "샀어요",
+    statusClass: "bought",
+  },
+};
+
+function isProductStatus(value: unknown): value is ProductStatus {
+  return value === "WANT" || value === "CONSIDERING" || value === "BOUGHT";
+}
+
+function getDeletedProductIds(): number[] {
+  try {
+    const saved = localStorage.getItem("dearly-deleted-products");
+
+    if (!saved) {
+      return [];
+    }
+
+    const parsed: unknown = JSON.parse(saved);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter(
+      (id): id is number => typeof id === "number" && Number.isInteger(id),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function getRecentWishlistItems(): Wish[] {
+  const deletedIds = getDeletedProductIds();
+
+  return wishlistItems
+    .filter((item) => !deletedIds.includes(item.id))
+    .map((item): Wish => {
+      try {
+        const saved = localStorage.getItem(`dearly-product-detail-${item.id}`);
+
+        if (!saved) {
+          return item;
+        }
+
+        const parsed: unknown = JSON.parse(saved);
+
+        if (
+          typeof parsed !== "object" ||
+          parsed === null ||
+          !("status" in parsed) ||
+          !isProductStatus(parsed.status)
+        ) {
+          return item;
+        }
+
+        return {
+          ...item,
+          ...statusMap[parsed.status],
+        };
+      } catch {
+        return item;
+      }
+    });
+}
+
+function getCurrentMonth(): string {
+  const today = new Date();
+
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}`;
+}
+
 function Home() {
   const navigate = useNavigate();
+
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
+
+  const recentWishlistItems = getRecentWishlistItems();
 
   return (
     <main className="home">
@@ -54,16 +146,13 @@ function Home() {
             <p>나의 위시와 소비를 한눈에 확인해보세요</p>
           </div>
 
-          <select className="month-select" defaultValue="2026-10">
-            <option value="2026-10">2026년 10월</option>
-            <option value="2026-09">2026년 9월</option>
-            <option value="2026-08">2026년 8월</option>
-          </select>
+          <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
         </section>
 
         <section className="dashboard-summary">
-          <MonthlySummary />
-          <CategoryChart />
+          <MonthlySummary selectedMonth={selectedMonth} />
+
+          <CategoryChart selectedMonth={selectedMonth} />
         </section>
 
         <section className="recent-wishlist">
@@ -80,15 +169,24 @@ function Home() {
           </div>
 
           <div className="wishlist-grid">
-            {wishlistItems.map((item) => (
-              <WishlistCard
-                key={item.id}
-                name={item.name}
-                price={item.price}
-                status={item.status}
-                statusClass={item.statusClass}
-              />
-            ))}
+            {recentWishlistItems.length > 0 ? (
+              recentWishlistItems.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => navigate(`/wishlist/${item.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <WishlistCard
+                    name={item.name}
+                    price={item.price}
+                    status={item.status}
+                    statusClass={item.statusClass}
+                  />
+                </div>
+              ))
+            ) : (
+              <p>등록된 위시 상품이 없습니다.</p>
+            )}
           </div>
         </section>
       </div>
