@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
 import type { Wish, WishCategory } from "../../types/wish";
+
 import "./Wishlist.css";
 
 const wishlistItems: Wish[] = [
@@ -85,36 +86,62 @@ function isProductStatus(value: unknown): value is ProductStatus {
   return value === "WANT" || value === "CONSIDERING" || value === "BOUGHT";
 }
 
-function getWishlistItems(): Wish[] {
-  return wishlistItems.map((item): Wish => {
-    const storageKey = `dearly-product-detail-${item.id}`;
+function getDeletedProductIds(): number[] {
+  try {
+    const saved = localStorage.getItem("dearly-deleted-products");
 
-    try {
-      const saved = localStorage.getItem(storageKey);
-
-      if (!saved) {
-        return item;
-      }
-
-      const product: unknown = JSON.parse(saved);
-
-      if (
-        typeof product !== "object" ||
-        product === null ||
-        !("status" in product) ||
-        !isProductStatus(product.status)
-      ) {
-        return item;
-      }
-
-      return {
-        ...item,
-        ...statusMap[product.status],
-      };
-    } catch {
-      return item;
+    if (!saved) {
+      return [];
     }
-  });
+
+    const parsed: unknown = JSON.parse(saved);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter(
+      (id): id is number => typeof id === "number" && Number.isInteger(id),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function getWishlistItems(): Wish[] {
+  const deletedIds = getDeletedProductIds();
+
+  return wishlistItems
+    .filter((item) => !deletedIds.includes(item.id))
+    .map((item): Wish => {
+      const storageKey = `dearly-product-detail-${item.id}`;
+
+      try {
+        const saved = localStorage.getItem(storageKey);
+
+        if (!saved) {
+          return item;
+        }
+
+        const product: unknown = JSON.parse(saved);
+
+        if (
+          typeof product !== "object" ||
+          product === null ||
+          !("status" in product) ||
+          !isProductStatus(product.status)
+        ) {
+          return item;
+        }
+
+        return {
+          ...item,
+          ...statusMap[product.status],
+        };
+      } catch {
+        return item;
+      }
+    });
 }
 
 function Wishlist() {
