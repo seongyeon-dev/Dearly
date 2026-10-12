@@ -1,35 +1,109 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShoppingBag, CreditCard, CircleDollarSign } from "lucide-react";
 
 import BudgetModal from "../BudgetModal/BudgetModal";
+import { getMonthlyTotal } from "../../../utils/purchaseStorage";
 
 import "./MonthlySummary.css";
 
-function MonthlySummary() {
+type MonthlySummaryProps = {
+  selectedMonth?: string;
+};
+
+const DEFAULT_BUDGET = 500000;
+
+function getCurrentMonth(): string {
+  const today = new Date();
+
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}`;
+}
+
+function getSavedBudget(month: string): number {
+  try {
+    const savedBudget = localStorage.getItem(`dearly-budget-${month}`);
+
+    if (savedBudget === null) {
+      return DEFAULT_BUDGET;
+    }
+
+    const parsedBudget = Number(savedBudget);
+
+    if (Number.isFinite(parsedBudget) && parsedBudget >= 0) {
+      return parsedBudget;
+    }
+
+    return DEFAULT_BUDGET;
+  } catch {
+    return DEFAULT_BUDGET;
+  }
+}
+
+function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
   const navigate = useNavigate();
 
-  const [budget, setBudget] = useState(500000);
+  const [budgets, setBudgets] = useState<Record<string, number>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const spentAmount = 327000;
-  const month = "2026-10";
+  const month = selectedMonth || getCurrentMonth();
+
+  const [yearString, monthString] = month.split("-");
+
+  const year = Number(yearString);
+  const monthNumber = Number(monthString);
+
+  const lastDay = new Date(year, monthNumber, 0).getDate();
+
+  const startDate = `${yearString}.${monthString}.01`;
+  const endDate = `${yearString}.${monthString}.${String(lastDay).padStart(
+    2,
+    "0",
+  )}`;
+
+  const budget = budgets[month] ?? getSavedBudget(month);
+
+  const spentAmount = getMonthlyTotal(month);
 
   const remainingBudget = budget - spentAmount;
 
-  const usedPercent = budget > 0 ? Math.round((spentAmount / budget) * 100) : 0;
+  const usedPercent =
+    budget > 0 ? Math.round((spentAmount / budget) * 100) : 0;
 
-  const remainingPercent = budget > 0 ? Math.max(0, 100 - usedPercent) : 0;
+  const remainingPercent =
+    budget > 0 ? Math.max(0, 100 - usedPercent) : 0;
 
-  const formatPrice = (price: number) => `${price.toLocaleString("ko-KR")}원`;
+  const formatPrice = (price: number) =>
+    `${price.toLocaleString("ko-KR")}원`;
+
+  const handleSaveBudget = (newBudget: number) => {
+    try {
+      localStorage.setItem(`dearly-budget-${month}`, String(newBudget));
+    } catch {
+      alert("예산을 저장하지 못했습니다.");
+      return;
+    }
+
+    setBudgets((previous) => ({
+      ...previous,
+      [month]: newBudget,
+    }));
+
+    setIsModalOpen(false);
+  };
 
   return (
     <>
       <div className="monthly-card">
         <div className="monthly-header">
           <div>
-            <h2>10월의 소비</h2>
-            <p>2026.10.01 - 2026.10.31</p>
+            <h2>{monthNumber}월의 소비</h2>
+            <p>
+              {startDate} - {endDate}
+            </p>
           </div>
 
           <button
@@ -114,14 +188,12 @@ function MonthlySummary() {
       </div>
 
       <BudgetModal
+        key={month}
         isOpen={isModalOpen}
         budget={budget}
         month={month}
         onClose={() => setIsModalOpen(false)}
-        onSave={(newBudget) => {
-          setBudget(newBudget);
-          setIsModalOpen(false);
-        }}
+        onSave={handleSaveBudget}
       />
     </>
   );

@@ -1,8 +1,20 @@
+
 import { CreditCard, ShoppingBag } from "lucide-react";
 
 import "./PurchaseSummary.css";
 
-function PurchaseSummary() {
+type PurchaseSummaryProps = {
+  totalAmount: number;
+  purchaseCount: number;
+};
+
+function PurchaseSummary({
+  totalAmount,
+  purchaseCount,
+}: PurchaseSummaryProps) {
+  const formatPrice = (price: number) =>
+    `${price.toLocaleString("ko-KR")}원`;
+
   return (
     <section className="purchase-summary">
       <div className="purchase-summary-item">
@@ -11,8 +23,8 @@ function PurchaseSummary() {
         </div>
 
         <div className="summary-info">
-          <span>이번 달 소비 금액</span>
-          <strong>327,000원</strong>
+          <span>선택한 달의 소비 금액</span>
+          <strong>{formatPrice(totalAmount)}</strong>
         </div>
       </div>
 
@@ -25,7 +37,7 @@ function PurchaseSummary() {
 
         <div className="summary-info">
           <span>구매한 상품</span>
-          <strong>4개</strong>
+          <strong>{purchaseCount}개</strong>
         </div>
       </div>
     </section>

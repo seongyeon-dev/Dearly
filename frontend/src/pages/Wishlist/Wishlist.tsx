@@ -3,59 +3,10 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
+import { products } from "../../data/products";
 import type { Wish, WishCategory } from "../../types/wish";
-import "./Wishlist.css";
 
-const wishlistItems: Wish[] = [
-  {
-    id: 1,
-    name: "롬앤 쥬시래스팅 틴트",
-    price: "13,000원",
-    category: "BEAUTY",
-    status: "사고 싶어요",
-    statusClass: "want",
-  },
-  {
-    id: 2,
-    name: "에스트라 아토베리어 크림",
-    price: "32,000원",
-    category: "BEAUTY",
-    status: "고민 중",
-    statusClass: "considering",
-  },
-  {
-    id: 3,
-    name: "나이키 에어포스 1",
-    price: "139,000원",
-    category: "FASHION",
-    status: "샀어요",
-    statusClass: "bought",
-  },
-  {
-    id: 4,
-    name: "클리오 킬커버 쿠션",
-    price: "32,000원",
-    category: "BEAUTY",
-    status: "고민 중",
-    statusClass: "considering",
-  },
-  {
-    id: 5,
-    name: "무인양품 테이블 조명",
-    price: "59,000원",
-    category: "LIFESTYLE",
-    status: "사고 싶어요",
-    statusClass: "want",
-  },
-  {
-    id: 6,
-    name: "폴로 케이블 니트",
-    price: "169,000원",
-    category: "FASHION",
-    status: "사고 싶어요",
-    statusClass: "want",
-  },
-];
+import "./Wishlist.css";
 
 const categoryNames: Record<WishCategory, string> = {
   BEAUTY: "뷰티",
@@ -65,6 +16,8 @@ const categoryNames: Record<WishCategory, string> = {
 };
 
 type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
+
+type SortType = "latest" | "oldest" | "price-low" | "price-high";
 
 const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
   WANT: {
@@ -85,36 +38,91 @@ function isProductStatus(value: unknown): value is ProductStatus {
   return value === "WANT" || value === "CONSIDERING" || value === "BOUGHT";
 }
 
-function getWishlistItems(): Wish[] {
-  return wishlistItems.map((item): Wish => {
-    const storageKey = `dearly-product-detail-${item.id}`;
+function getDeletedProductIds(): number[] {
+  try {
+    const saved = localStorage.getItem("dearly-deleted-products");
 
-    try {
-      const saved = localStorage.getItem(storageKey);
-
-      if (!saved) {
-        return item;
-      }
-
-      const product: unknown = JSON.parse(saved);
-
-      if (
-        typeof product !== "object" ||
-        product === null ||
-        !("status" in product) ||
-        !isProductStatus(product.status)
-      ) {
-        return item;
-      }
-
-      return {
-        ...item,
-        ...statusMap[product.status],
-      };
-    } catch {
-      return item;
+    if (!saved) {
+      return [];
     }
-  });
+
+    const parsed: unknown = JSON.parse(saved);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter(
+      (id): id is number => typeof id === "number" && Number.isInteger(id),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function getWishlistItems(): Wish[] {
+  const deletedIds = getDeletedProductIds();
+
+  return products
+    .filter((item) => !deletedIds.includes(item.id))
+    .map((item): Wish => {
+      const storageKey = `dearly-product-detail-${item.id}`;
+
+      try {
+        const saved = localStorage.getItem(storageKey);
+
+        if (!saved) {
+          return item;
+        }
+
+        const product: unknown = JSON.parse(saved);
+
+        if (
+          typeof product !== "object" ||
+          product === null ||
+          !("status" in product) ||
+          !isProductStatus(product.status)
+        ) {
+          return item;
+        }
+
+        return {
+          ...item,
+          ...statusMap[product.status],
+        };
+      } catch {
+        return item;
+      }
+    });
+}
+
+function getNumericPrice(price: string): number {
+  return Number(price.replace(/[^\d]/g, ""));
+}
+
+function sortWishlistItems(items: Wish[], sortType: SortType): Wish[] {
+  const sortedItems = [...items];
+
+  switch (sortType) {
+    case "latest":
+      return sortedItems.sort((a, b) => b.id - a.id);
+
+    case "oldest":
+      return sortedItems.sort((a, b) => a.id - b.id);
+
+    case "price-low":
+      return sortedItems.sort(
+        (a, b) => getNumericPrice(a.price) - getNumericPrice(b.price),
+      );
+
+    case "price-high":
+      return sortedItems.sort(
+        (a, b) => getNumericPrice(b.price) - getNumericPrice(a.price),
+      );
+
+    default:
+      return sortedItems;
+  }
 }
 
 function Wishlist() {
@@ -122,6 +130,8 @@ function Wishlist() {
   const [searchParams] = useSearchParams();
 
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
+
+  const [sortType, setSortType] = useState<SortType>("latest");
 
   const items = getWishlistItems();
 
@@ -139,6 +149,8 @@ function Wishlist() {
 
     return item.category === selectedCategory;
   });
+
+  const sortedItems = sortWishlistItems(filteredItems, sortType);
 
   return (
     <main className="wishlist-page">
@@ -159,7 +171,11 @@ function Wishlist() {
         </section>
 
         <section className="wishlist-toolbar">
-          <select className="wishlist-sort" defaultValue="latest">
+          <select
+            className="wishlist-sort"
+            value={sortType}
+            onChange={(e) => setSortType(e.target.value as SortType)}
+          >
             <option value="latest">최신순</option>
             <option value="oldest">오래된순</option>
             <option value="price-low">낮은 가격순</option>
@@ -190,8 +206,8 @@ function Wishlist() {
         <section
           className={`wishlist-items ${viewType === "list" ? "list-view" : ""}`}
         >
-          {filteredItems.length > 0 ? (
-            filteredItems.map((item) => (
+          {sortedItems.length > 0 ? (
+            sortedItems.map((item) => (
               <div
                 key={item.id}
                 className="wishlist-card-link"

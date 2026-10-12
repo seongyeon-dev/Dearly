@@ -1,10 +1,14 @@
 import type { PurchaseData } from "../../../components/PurchaseModal/PurchaseModal";
 import type { ProductDetails } from "../ProductDetail";
+
 import "./ProductInfo.css";
 
 type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
 
 type ProductInfoProps = {
+  name: string;
+  price: number;
+  category: string;
   status: ProductStatus;
   onStatusChange: (status: ProductStatus) => void;
   purchaseData: PurchaseData | null;
@@ -13,6 +17,9 @@ type ProductInfoProps = {
 };
 
 function ProductInfo({
+  name,
+  price,
+  category,
   status,
   onStatusChange,
   purchaseData,
@@ -29,9 +36,9 @@ function ProductInfo({
   return (
     <section className="detail-info">
       <div className="detail-title">
-        <h1>롬앤 쥬시래스팅 틴트</h1>
-        <strong>13,000원</strong>
-        <span className="detail-category">뷰티</span>
+        <h1>{name}</h1>
+        <strong>{price.toLocaleString("ko-KR")}원</strong>
+        <span className="detail-category">{category}</span>
       </div>
 
       <div className="detail-field">

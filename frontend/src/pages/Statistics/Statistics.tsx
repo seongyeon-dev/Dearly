@@ -2,92 +2,71 @@ import { useState } from "react";
 
 import CategoryChart from "../../components/CategoryChart/CategoryChart";
 import type { CategorySpendingData } from "../../types/statistics";
+import { getMonthlyPurchases } from "../../utils/purchaseStorage";
+
 import CategorySpending from "./CategorySpending/CategorySpending";
 import MonthlyChart from "./MonthlyChart/MonthlyChart";
-import { monthlySpending } from "./statisticsData";
 
 import "./Statistics.css";
 
+const categoryList = [
+  { name: "뷰티", className: "beauty" },
+  { name: "패션", className: "fashion" },
+  { name: "라이프스타일", className: "lifestyle" },
+  { name: "기타", className: "other" },
+];
+
 function Statistics() {
-  const [selectedYear, setSelectedYear] = useState("2026");
-  const [selectedMonth, setSelectedMonth] = useState(10);
+  const today = new Date();
 
-  const selectedMonthData =
-    monthlySpending.find((item) => item.month === selectedMonth) ??
-    monthlySpending[0];
+  const [selectedYear, setSelectedYear] = useState(String(today.getFullYear()));
 
-  const categorySpending = selectedMonthData.categories;
+  const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1);
 
-  const totalSpending = categorySpending.reduce(
-    (total, category) => total + category.amount,
-    0,
+  const monthlySpending = Array.from({ length: 12 }, (_, index) => {
+    const month = index + 1;
+    const monthKey = `${selectedYear}-${String(month).padStart(2, "0")}`;
+
+    const purchases = getMonthlyPurchases(monthKey);
+
+    const amount = purchases.reduce(
+      (total, purchase) => total + purchase.amount,
+      0,
+    );
+
+    const categories: CategorySpendingData[] = categoryList.map((category) => {
+      const categoryAmount = purchases
+        .filter((purchase) => purchase.category === category.name)
+        .reduce((total, purchase) => total + purchase.amount, 0);
+
+      return {
+        name: category.name,
+        className: category.className,
+        amount: categoryAmount,
+        percentage:
+          amount > 0 ? Math.round((categoryAmount / amount) * 100) : 0,
+      };
+    });
+
+    return {
+      month,
+      amount,
+      categories,
+    };
+  });
+
+  const selectedMonthData = monthlySpending.find(
+    (item) => item.month === selectedMonth,
   );
 
-  const yearlyTotalSpending = monthlySpending.reduce(
-    (total, month) => total + month.amount,
-    0,
-  );
+  const categorySpending = selectedMonthData?.categories ?? [];
 
-  const yearlyCategoryAmounts = monthlySpending.reduce(
-    (totals, month) => {
-      month.categories.forEach((category) => {
-        totals[category.className] =
-          (totals[category.className] ?? 0) + category.amount;
-      });
+  const totalSpending = selectedMonthData?.amount ?? 0;
 
-      return totals;
-    },
-    {} as Record<string, number>,
-  );
-
-  const yearlyCategories: CategorySpendingData[] = [
-    {
-      name: "뷰티",
-      amount: yearlyCategoryAmounts.beauty ?? 0,
-      percentage:
-        yearlyTotalSpending > 0
-          ? Math.round(
-              ((yearlyCategoryAmounts.beauty ?? 0) / yearlyTotalSpending) * 100,
-            )
-          : 0,
-      className: "beauty",
-    },
-    {
-      name: "패션",
-      amount: yearlyCategoryAmounts.fashion ?? 0,
-      percentage:
-        yearlyTotalSpending > 0
-          ? Math.round(
-              ((yearlyCategoryAmounts.fashion ?? 0) / yearlyTotalSpending) *
-                100,
-            )
-          : 0,
-      className: "fashion",
-    },
-    {
-      name: "라이프스타일",
-      amount: yearlyCategoryAmounts.lifestyle ?? 0,
-      percentage:
-        yearlyTotalSpending > 0
-          ? Math.round(
-              ((yearlyCategoryAmounts.lifestyle ?? 0) / yearlyTotalSpending) *
-                100,
-            )
-          : 0,
-      className: "lifestyle",
-    },
-    {
-      name: "기타",
-      amount: yearlyCategoryAmounts.other ?? 0,
-      percentage:
-        yearlyTotalSpending > 0
-          ? Math.round(
-              ((yearlyCategoryAmounts.other ?? 0) / yearlyTotalSpending) * 100,
-            )
-          : 0,
-      className: "other",
-    },
-  ];
+  const selectedMonthKey = `${selectedYear}-${String(selectedMonth).padStart(
+    2,
+    "0",
+  )}`;
 
   return (
     <main className="statistics">
@@ -138,10 +117,7 @@ function Statistics() {
           />
 
           <div className="category-chart-wrapper">
-            <CategoryChart
-              categories={yearlyCategories}
-              totalSpending={yearlyTotalSpending}
-            />
+            <CategoryChart selectedMonth={selectedMonthKey} />
           </div>
         </div>
       </div>

@@ -1,3 +1,5 @@
+import { getMonthlyPurchases } from "../../utils/purchaseStorage";
+
 import "./CategoryChart.css";
 
 type Category = {
@@ -8,63 +10,54 @@ type Category = {
 };
 
 type CategoryChartProps = {
-  categories?: Category[];
-  totalSpending?: number;
+  selectedMonth: string;
 };
 
-const defaultCategories: Category[] = [
-  {
-    name: "뷰티",
-    amount: 677000,
-    percentage: 40,
-    className: "beauty",
-  },
-  {
-    name: "패션",
-    amount: 472000,
-    percentage: 28,
-    className: "fashion",
-  },
-  {
-    name: "라이프스타일",
-    amount: 345000,
-    percentage: 21,
-    className: "lifestyle",
-  },
-  {
-    name: "기타",
-    amount: 178000,
-    percentage: 11,
-    className: "other",
-  },
+const categoryNames = [
+  { name: "뷰티", className: "beauty", color: "var(--color-primary)" },
+  { name: "패션", className: "fashion", color: "#ef91ad" },
+  { name: "라이프스타일", className: "lifestyle", color: "#c8a9ed" },
+  { name: "기타", className: "other", color: "#e8c9d5" },
 ];
 
-function CategoryChart({
-  categories = defaultCategories,
-  totalSpending,
-}: CategoryChartProps) {
-  const total =
-    totalSpending ??
-    categories.reduce((sum, category) => sum + category.amount, 0);
+function CategoryChart({ selectedMonth }: CategoryChartProps) {
+  const purchases = getMonthlyPurchases(selectedMonth);
 
-  const hasSpending = total > 0;
+  const totalSpending = purchases.reduce(
+    (total, purchase) => total + purchase.amount,
+    0,
+  );
 
-  const beautyPercentage = categories[0]?.percentage ?? 0;
-  const fashionPercentage = categories[1]?.percentage ?? 0;
-  const lifestylePercentage = categories[2]?.percentage ?? 0;
+  const categories: Category[] = categoryNames.map((category) => {
+    const amount = purchases
+      .filter((purchase) => purchase.category === category.name)
+      .reduce((total, purchase) => total + purchase.amount, 0);
 
-  const beautyEnd = beautyPercentage;
-  const fashionEnd = beautyEnd + fashionPercentage;
-  const lifestyleEnd = fashionEnd + lifestylePercentage;
+    const percentage = totalSpending > 0 ? (amount / totalSpending) * 100 : 0;
 
-  const donutBackground = hasSpending
-    ? `conic-gradient(
-        var(--color-primary) 0% ${beautyEnd}%,
-        #ef91ad ${beautyEnd}% ${fashionEnd}%,
-        #c8a9ed ${fashionEnd}% ${lifestyleEnd}%,
-        #e8c9d5 ${lifestyleEnd}% 100%
-      )`
-    : "var(--color-primary-bg)";
+    return {
+      name: category.name,
+      amount,
+      percentage,
+      className: category.className,
+    };
+  });
+
+  let currentPercentage = 0;
+
+  const gradientParts = categories.map((category, index) => {
+    const start = currentPercentage;
+    const end = start + category.percentage;
+
+    currentPercentage = end;
+
+    return `${categoryNames[index].color} ${start}% ${end}%`;
+  });
+
+  const donutBackground =
+    totalSpending > 0
+      ? `conic-gradient(${gradientParts.join(", ")})`
+      : "var(--color-primary-bg)";
 
   return (
     <section className="category-chart-card">
@@ -76,7 +69,7 @@ function CategoryChart({
             <span className="category-donut-label">총 소비</span>
 
             <strong className="category-donut-total">
-              {total.toLocaleString()}원
+              {totalSpending.toLocaleString("ko-KR")}원
             </strong>
           </div>
         </div>
@@ -89,7 +82,7 @@ function CategoryChart({
                 <span>{category.name}</span>
               </div>
 
-              <strong>{category.percentage}%</strong>
+              <strong>{Math.round(category.percentage)}%</strong>
             </div>
           ))}
         </div>
