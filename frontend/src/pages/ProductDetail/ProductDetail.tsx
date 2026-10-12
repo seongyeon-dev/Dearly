@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { products } from "../../data/products";
 import type { WishCategory } from "../../types/wish";
+import { getWishlistProducts } from "../../utils/wishlistStorage";
+
 import ProductImages from "./ProductImages/ProductImages";
 import ProductInfo from "./ProductInfo/ProductInfo";
+
 import PurchaseModal, {
   type PurchaseData,
 } from "../../components/PurchaseModal/PurchaseModal";
@@ -33,6 +35,8 @@ type StoredProduct = {
   purchaseData: PurchaseData | null;
 };
 
+type LegacyStoredProduct = Partial<StoredProduct> & Partial<ProductDetails>;
+
 const categoryNames: Record<WishCategory, string> = {
   BEAUTY: "뷰티",
   FASHION: "패션",
@@ -42,6 +46,10 @@ const categoryNames: Record<WishCategory, string> = {
 
 function parsePrice(price: string): number {
   return Number(price.replace(/[^\d]/g, ""));
+}
+
+function isProductStatus(value: unknown): value is ProductStatus {
+  return value === "WANT" || value === "CONSIDERING" || value === "BOUGHT";
 }
 
 function createInitialProduct(
@@ -78,27 +86,28 @@ function loadProduct(
       return initialProduct;
     }
 
-    const parsed = JSON.parse(saved) as Partial<StoredProduct>;
+    const parsed = JSON.parse(saved) as LegacyStoredProduct;
 
-    if (!parsed.details || !parsed.status) {
+    if (typeof parsed !== "object" || parsed === null) {
       return initialProduct;
     }
 
-    const validStatus =
-      parsed.status === "WANT" ||
-      parsed.status === "CONSIDERING" ||
-      parsed.status === "BOUGHT";
-
-    if (!validStatus) {
-      return initialProduct;
-    }
+    const savedDetails = parsed.details ?? {
+      plannedDate: parsed.plannedDate ?? "",
+      expectedPrice: parsed.expectedPrice ?? String(price),
+      purchaseLink: parsed.purchaseLink ?? "",
+      memo: parsed.memo ?? "",
+    };
 
     return {
       details: {
         ...initialProduct.details,
-        ...parsed.details,
+        ...savedDetails,
+        expectedPrice: String(
+          savedDetails.expectedPrice ?? initialProduct.details.expectedPrice,
+        ),
       },
-      status: parsed.status,
+      status: isProductStatus(parsed.status) ? parsed.status : initialStatus,
       purchaseData: parsed.purchaseData ?? null,
     };
   } catch {
@@ -130,15 +139,17 @@ function getDeletedProductIds(): number[] {
 
 function ProductDetail() {
   const navigate = useNavigate();
-
   const { wishId } = useParams<{ wishId: string }>();
+
   const productId = Number(wishId);
 
-  const deletedProductIds = getDeletedProductIds();
+  const productInfo = useMemo(() => {
+    const deletedProductIds = getDeletedProductIds();
 
-  const productInfo = products.find(
-    (item) => item.id === productId && !deletedProductIds.includes(item.id),
-  );
+    return getWishlistProducts().find(
+      (item) => item.id === productId && !deletedProductIds.includes(item.id),
+    );
+  }, [productId]);
 
   const productPrice = productInfo ? parsePrice(productInfo.price) : 0;
 
@@ -168,14 +179,14 @@ function ProductDetail() {
 
     const loadedProduct = loadProduct(
       productInfo.id,
-      parsePrice(productInfo.price),
+      productPrice,
       initialStatus,
     );
 
     setProduct(loadedProduct);
     setDetails(loadedProduct.details);
     setIsPurchaseModalOpen(false);
-  }, [productId, productInfo, initialStatus]);
+  }, [productId, productInfo, productPrice, initialStatus]);
 
   useEffect(() => {
     if (!productInfo || product.status !== "BOUGHT" || !product.purchaseData) {
@@ -427,7 +438,7 @@ function ProductDetail() {
         </div>
 
         <div className="detail-content">
-          <ProductImages />
+          <ProductImages productId={productInfo.id} />
 
           <ProductInfo
             name={productInfo.name}
