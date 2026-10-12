@@ -139,7 +139,7 @@ function getDeletedProductIds(): number[] {
 
 function deleteProductImages(productId: number): Promise<void> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("dearly-images", 1);
+    const request = indexedDB.open("dearly-images", 2);
 
     request.onupgradeneeded = () => {
       const database = request.result;
@@ -147,10 +147,20 @@ function deleteProductImages(productId: number): Promise<void> {
       if (!database.objectStoreNames.contains("products")) {
         database.createObjectStore("products");
       }
+
+      if (!database.objectStoreNames.contains("profiles")) {
+        database.createObjectStore("profiles");
+      }
     };
 
     request.onerror = () => {
-      reject(new Error("이미지 저장소를 열 수 없습니다."));
+      console.error("이미지 저장소 열기 실패:", request.error);
+
+      reject(request.error ?? new Error("이미지 저장소를 열 수 없습니다."));
+    };
+
+    request.onblocked = () => {
+      console.error("이미지 데이터베이스 업그레이드가 차단되었습니다.");
     };
 
     request.onsuccess = () => {
@@ -175,13 +185,21 @@ function deleteProductImages(productId: number): Promise<void> {
       };
 
       transaction.onerror = () => {
+        console.error("상품 이미지 삭제 실패:", transaction.error);
+
         database.close();
-        reject(new Error("상품 이미지 삭제에 실패했습니다."));
+
+        reject(
+          transaction.error ?? new Error("상품 이미지 삭제에 실패했습니다."),
+        );
       };
 
       transaction.onabort = () => {
         database.close();
-        reject(new Error("상품 이미지 삭제가 취소되었습니다."));
+
+        reject(
+          transaction.error ?? new Error("상품 이미지 삭제가 취소되었습니다."),
+        );
       };
     };
   });
@@ -296,7 +314,6 @@ function ProductDetail() {
       );
 
       setProduct(nextProduct);
-
       return true;
     } catch {
       alert("저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.");
