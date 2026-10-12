@@ -94,6 +94,7 @@ function ProductInfo({
 
       <div className="detail-field">
         <label htmlFor="planned-date">구매 예정일</label>
+
         <input
           id="planned-date"
           type="date"
@@ -104,6 +105,7 @@ function ProductInfo({
 
       <div className="detail-field">
         <label htmlFor="expected-price">예상 가격</label>
+
         <input
           id="expected-price"
           type="number"
@@ -116,6 +118,7 @@ function ProductInfo({
 
       <div className="detail-field">
         <label htmlFor="purchase-link">구매 링크</label>
+
         <input
           id="purchase-link"
           type="url"
@@ -127,6 +130,7 @@ function ProductInfo({
 
       <div className="detail-field">
         <label htmlFor="product-memo">메모</label>
+
         <div className="detail-memo-edit">
           <textarea
             id="product-memo"
@@ -136,6 +140,7 @@ function ProductInfo({
             rows={4}
             placeholder="메모를 입력해 주세요."
           />
+
           <span>{details.memo.length}/300</span>
         </div>
       </div>

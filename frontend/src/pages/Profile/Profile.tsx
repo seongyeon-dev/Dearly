@@ -4,17 +4,83 @@ import ProfileImage from "./ProfileImage/ProfileImage";
 
 import "./Profile.css";
 
+type ProfileData = {
+  nickname: string;
+  introduction: string;
+};
+
+const PROFILE_STORAGE_KEY = "dearly-profile";
+
+const defaultProfile: ProfileData = {
+  nickname: "성연",
+  introduction: "나의 취향을 기록하는 공간",
+};
+
+function getSavedProfile(): ProfileData {
+  try {
+    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+
+    if (!saved) {
+      return defaultProfile;
+    }
+
+    const parsed: unknown = JSON.parse(saved);
+
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !("nickname" in parsed) ||
+      !("introduction" in parsed) ||
+      typeof parsed.nickname !== "string" ||
+      typeof parsed.introduction !== "string"
+    ) {
+      return defaultProfile;
+    }
+
+    return {
+      nickname: parsed.nickname,
+      introduction: parsed.introduction,
+    };
+  } catch {
+    return defaultProfile;
+  }
+}
+
 function Profile() {
-  const [nickname, setNickname] = useState("성연");
-  const [introduction, setIntroduction] = useState("나의 취향을 기록하는 공간");
+  const [savedProfile] = useState(getSavedProfile);
+
+  const [nickname, setNickname] = useState(savedProfile.nickname);
+
+  const [introduction, setIntroduction] = useState(savedProfile.introduction);
 
   const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    console.log({
-      nickname,
-      introduction,
-    });
+    const trimmedNickname = nickname.trim();
+    const trimmedIntroduction = introduction.trim();
+
+    if (!trimmedNickname) {
+      alert("닉네임을 입력해 주세요.");
+      return;
+    }
+
+    const updatedProfile: ProfileData = {
+      nickname: trimmedNickname,
+      introduction: trimmedIntroduction,
+    };
+
+    try {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
+
+      setNickname(trimmedNickname);
+      setIntroduction(trimmedIntroduction);
+
+      window.dispatchEvent(new Event("dearly-profile-updated"));
+
+      alert("프로필이 수정되었습니다.");
+    } catch {
+      alert("프로필 저장에 실패했습니다.");
+    }
   };
 
   return (
