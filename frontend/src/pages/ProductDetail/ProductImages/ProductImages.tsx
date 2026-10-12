@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import "./ProductImages.css";
@@ -7,9 +7,9 @@ type ProductImagesProps = {
   productId: number;
 };
 
-function loadProductImages(productId: number): Promise<File[]> {
+function openImageDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("dearly-images", 1);
+    const request = indexedDB.open("dearly-images", 2);
 
     request.onupgradeneeded = () => {
       const database = request.result;
@@ -17,58 +17,86 @@ function loadProductImages(productId: number): Promise<File[]> {
       if (!database.objectStoreNames.contains("products")) {
         database.createObjectStore("products");
       }
-    };
 
-    request.onerror = () => {
-      reject(new Error("이미지를 불러올 수 없습니다."));
+      if (!database.objectStoreNames.contains("profiles")) {
+        database.createObjectStore("profiles");
+      }
     };
 
     request.onsuccess = () => {
-      const database = request.result;
-      const transaction = database.transaction("products", "readonly");
-      const store = transaction.objectStore("products");
-      const getRequest = store.get(productId);
+      resolve(request.result);
+    };
 
-      getRequest.onsuccess = () => {
-        const result: unknown = getRequest.result;
+    request.onerror = () => {
+      reject(
+        request.error ?? new Error("이미지 데이터베이스를 열 수 없습니다."),
+      );
+    };
 
-        if (Array.isArray(result)) {
-          resolve(result.filter((file): file is File => file instanceof File));
-        } else {
-          resolve([]);
-        }
-      };
-
-      getRequest.onerror = () => {
-        reject(new Error("상품 이미지를 읽을 수 없습니다."));
-      };
-
-      transaction.oncomplete = () => {
-        database.close();
-      };
+    request.onblocked = () => {
+      console.error("이미지 데이터베이스 업그레이드가 차단되었습니다.");
     };
   });
 }
 
-function saveProductImages(productId: number, images: File[]): Promise<void> {
+async function loadProductImages(productId: number): Promise<Blob[]> {
+  const database = await openImageDatabase();
+
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("dearly-images", 1);
+    let transaction: IDBTransaction;
 
-    request.onupgradeneeded = () => {
-      const database = request.result;
+    try {
+      transaction = database.transaction("products", "readonly");
+    } catch (error) {
+      database.close();
+      reject(error);
+      return;
+    }
 
-      if (!database.objectStoreNames.contains("products")) {
-        database.createObjectStore("products");
+    const store = transaction.objectStore("products");
+    const getRequest = store.get(productId);
+
+    let images: Blob[] = [];
+
+    getRequest.onsuccess = () => {
+      const result: unknown = getRequest.result;
+
+      if (Array.isArray(result)) {
+        images = result.filter((file): file is Blob => file instanceof Blob);
       }
     };
 
-    request.onerror = () => {
-      reject(new Error("이미지 저장소를 열 수 없습니다."));
+    transaction.oncomplete = () => {
+      database.close();
+      resolve(images);
     };
 
-    request.onsuccess = () => {
-      const database = request.result;
-      const transaction = database.transaction("products", "readwrite");
+    transaction.onerror = () => {
+      database.close();
+      reject(
+        transaction.error ?? new Error("상품 이미지 조회에 실패했습니다."),
+      );
+    };
+
+    transaction.onabort = () => {
+      database.close();
+      reject(new Error("상품 이미지 조회가 취소되었습니다."));
+    };
+  });
+}
+
+async function saveProductImages(
+  productId: number,
+  images: Blob[],
+): Promise<void> {
+  const database = await openImageDatabase();
+
+  return new Promise((resolve, reject) => {
+    let transaction: IDBTransaction;
+
+    try {
+      transaction = database.transaction("products", "readwrite");
+
       const store = transaction.objectStore("products");
 
       if (images.length > 0) {
@@ -76,23 +104,34 @@ function saveProductImages(productId: number, images: File[]): Promise<void> {
       } else {
         store.delete(productId);
       }
+    } catch (error) {
+      database.close();
+      reject(error);
+      return;
+    }
 
-      transaction.oncomplete = () => {
-        database.close();
-        resolve();
-      };
+    transaction.oncomplete = () => {
+      database.close();
+      resolve();
+    };
 
-      transaction.onerror = () => {
-        database.close();
-        reject(new Error("이미지 저장에 실패했습니다."));
-      };
+    transaction.onerror = () => {
+      database.close();
+      reject(
+        transaction.error ?? new Error("상품 이미지 저장에 실패했습니다."),
+      );
+    };
+
+    transaction.onabort = () => {
+      database.close();
+      reject(new Error("상품 이미지 저장이 취소되었습니다."));
     };
   });
 }
 
 function ProductImages({ productId }: ProductImagesProps) {
-  const [savedImages, setSavedImages] = useState<File[]>([]);
-  const [editingImages, setEditingImages] = useState<File[]>([]);
+  const [savedImages, setSavedImages] = useState<Blob[]>([]);
+  const [editingImages, setEditingImages] = useState<Blob[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -156,7 +195,7 @@ function ProductImages({ productId }: ProductImagesProps) {
     setIsEditing(false);
   };
 
-  const handleAddImages = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddImages = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
 
     if (files.length === 0) {
