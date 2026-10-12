@@ -4,45 +4,11 @@ import { useNavigate } from "react-router-dom";
 import CategoryChart from "../../components/CategoryChart/CategoryChart";
 import MonthSelector from "../../components/MonthSelector/MonthSelector";
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
+import { products } from "../../data/products";
 import type { Wish } from "../../types/wish";
 import MonthlySummary from "./MonthlySummary/MonthlySummary";
 
 import "./Home.css";
-
-const wishlistItems: Wish[] = [
-  {
-    id: 1,
-    name: "롬앤 쥬시래스팅 틴트",
-    price: "13,000원",
-    category: "BEAUTY",
-    status: "사고 싶어요",
-    statusClass: "want",
-  },
-  {
-    id: 2,
-    name: "에스트라 아토베리어 크림",
-    price: "32,000원",
-    category: "BEAUTY",
-    status: "고민 중",
-    statusClass: "considering",
-  },
-  {
-    id: 3,
-    name: "나이키 에어포스 1",
-    price: "139,000원",
-    category: "FASHION",
-    status: "샀어요",
-    statusClass: "bought",
-  },
-  {
-    id: 5,
-    name: "무인양품 테이블 조명",
-    price: "59,000원",
-    category: "LIFESTYLE",
-    status: "사고 싶어요",
-    statusClass: "want",
-  },
-];
 
 type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
 
@@ -90,7 +56,7 @@ function getDeletedProductIds(): number[] {
 function getRecentWishlistItems(): Wish[] {
   const deletedIds = getDeletedProductIds();
 
-  return wishlistItems
+  return products
     .filter((item) => !deletedIds.includes(item.id))
     .map((item): Wish => {
       try {
@@ -118,7 +84,8 @@ function getRecentWishlistItems(): Wish[] {
       } catch {
         return item;
       }
-    });
+    })
+    .slice(0, 4);
 }
 
 function getCurrentMonth(): string {
