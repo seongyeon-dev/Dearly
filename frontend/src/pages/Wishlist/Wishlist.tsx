@@ -1,9 +1,10 @@
-import { Grid2X2, List } from "lucide-react";
-import { useState } from "react";
+import { Grid2X2, Heart, List } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
 import type { Wish, WishCategory } from "../../types/wish";
+import { getFavoriteIds } from "../../utils/favoriteStorage";
 import { getWishlistProducts } from "../../utils/wishlistStorage";
 
 import "./Wishlist.css";
@@ -18,6 +19,8 @@ const categoryNames: Record<WishCategory, string> = {
 type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
 
 type SortType = "latest" | "oldest" | "price-low" | "price-high";
+
+type FilterType = "all" | "favorite";
 
 const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
   WANT: {
@@ -131,6 +134,23 @@ function Wishlist() {
 
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
   const [sortType, setSortType] = useState<SortType>("latest");
+  const [filterType, setFilterType] = useState<FilterType>("all");
+
+  const [favoriteIds, setFavoriteIds] = useState<number[]>(getFavoriteIds);
+
+  useEffect(() => {
+    const updateFavorites = () => {
+      setFavoriteIds(getFavoriteIds());
+    };
+
+    window.addEventListener("dearly-favorites-updated", updateFavorites);
+    window.addEventListener("storage", updateFavorites);
+
+    return () => {
+      window.removeEventListener("dearly-favorites-updated", updateFavorites);
+      window.removeEventListener("storage", updateFavorites);
+    };
+  }, []);
 
   const items = getWishlistItems();
 
@@ -142,11 +162,15 @@ function Wishlist() {
       : null;
 
   const filteredItems = items.filter((item) => {
-    if (!selectedCategory) {
-      return true;
+    if (selectedCategory && item.category !== selectedCategory) {
+      return false;
     }
 
-    return item.category === selectedCategory;
+    if (filterType === "favorite" && !favoriteIds.includes(item.id)) {
+      return false;
+    }
+
+    return true;
   });
 
   const sortedItems = sortWishlistItems(filteredItems, sortType);
@@ -168,6 +192,31 @@ function Wishlist() {
             + 상품 추가하기
           </button>
         </section>
+
+        <div className="wishlist-filter-tabs">
+          <button
+            type="button"
+            className={`wishlist-filter-tab ${
+              filterType === "all" ? "active" : ""
+            }`}
+            onClick={() => setFilterType("all")}
+            aria-pressed={filterType === "all"}
+          >
+            전체 상품
+          </button>
+
+          <button
+            type="button"
+            className={`wishlist-filter-tab ${
+              filterType === "favorite" ? "active" : ""
+            }`}
+            onClick={() => setFilterType("favorite")}
+            aria-pressed={filterType === "favorite"}
+          >
+            <Heart size={14} strokeWidth={1.7} />
+            관심 상품
+          </button>
+        </div>
 
         <section className="wishlist-toolbar">
           <select
@@ -222,7 +271,11 @@ function Wishlist() {
               </div>
             ))
           ) : (
-            <p>등록된 상품이 없습니다.</p>
+            <p className="wishlist-empty-message">
+              {filterType === "favorite"
+                ? "아직 관심 상품이 없어요. 마음에 드는 상품에 하트를 눌러보세요."
+                : "등록된 상품이 없습니다."}
+            </p>
           )}
         </section>
       </div>
