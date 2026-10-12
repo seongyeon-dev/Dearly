@@ -16,7 +16,34 @@ function MonthlyChart({
   selectedMonth,
   onMonthChange,
 }: MonthlyChartProps) {
-  const maxAmount = 350000;
+  const highestAmount = Math.max(
+    ...monthlySpending.map((item) => item.amount),
+    0,
+  );
+
+  const step =
+    highestAmount > 0
+      ? Math.pow(10, Math.floor(Math.log10(highestAmount / 3)))
+      : 10000;
+
+  const maxAmount =
+    highestAmount > 0
+      ? Math.ceil(highestAmount / (step * 3)) * step * 3
+      : 30000;
+
+  const formatAxisAmount = (amount: number): string => {
+    if (amount === 0) {
+      return "0원";
+    }
+
+    if (amount >= 10000) {
+      return `${Number((amount / 10000).toFixed(2))}만`;
+    }
+
+    return amount.toLocaleString("ko-KR");
+  };
+
+  const axisLabels = [maxAmount, (maxAmount * 2) / 3, maxAmount / 3, 0];
 
   return (
     <section className="monthly-statistics">
@@ -24,10 +51,9 @@ function MonthlyChart({
 
       <div className="monthly-chart">
         <div className="chart-y-axis">
-          <span>30만</span>
-          <span>20만</span>
-          <span>10만</span>
-          <span>0원</span>
+          {axisLabels.map((amount) => (
+            <span key={amount}>{formatAxisAmount(amount)}</span>
+          ))}
         </div>
 
         <div className="chart-area">
@@ -37,32 +63,39 @@ function MonthlyChart({
           <div className="chart-grid-line chart-grid-line-fourth" />
 
           <div className="chart-bars">
-            {monthlySpending.map((item) => (
-              <div className="chart-column" key={item.month}>
-                <div className="chart-bar-wrapper">
-                  {selectedMonth === item.month && (
-                    <div className="chart-tooltip">
-                      <span>{item.month}월</span>
-                      <strong>{item.amount.toLocaleString()}원</strong>
-                    </div>
-                  )}
+            {monthlySpending.map((item) => {
+              const barHeight =
+                maxAmount > 0
+                  ? Math.min(100, (item.amount / maxAmount) * 100)
+                  : 0;
 
-                  <button
-                    type="button"
-                    className={`chart-bar ${
-                      selectedMonth === item.month ? "active" : ""
-                    }`}
-                    style={{
-                      height: `${(item.amount / maxAmount) * 100}%`,
-                    }}
-                    onClick={() => onMonthChange(item.month)}
-                    aria-label={`${item.month}월 소비 금액 ${item.amount.toLocaleString()}원`}
-                  />
+              return (
+                <div className="chart-column" key={item.month}>
+                  <div className="chart-bar-wrapper">
+                    {selectedMonth === item.month && (
+                      <div className="chart-tooltip">
+                        <span>{item.month}월</span>
+                        <strong>{item.amount.toLocaleString("ko-KR")}원</strong>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      className={`chart-bar ${
+                        selectedMonth === item.month ? "active" : ""
+                      }`}
+                      style={{
+                        height: `${barHeight}%`,
+                      }}
+                      onClick={() => onMonthChange(item.month)}
+                      aria-label={`${item.month}월 소비 금액 ${item.amount.toLocaleString("ko-KR")}원`}
+                    />
+                  </div>
+
+                  <span className="chart-month">{item.month}월</span>
                 </div>
-
-                <span className="chart-month">{item.month}월</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
