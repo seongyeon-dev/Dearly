@@ -3,8 +3,8 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
-import { products } from "../../data/products";
 import type { Wish, WishCategory } from "../../types/wish";
+import { getWishlistProducts } from "../../utils/wishlistStorage";
 
 import "./Wishlist.css";
 
@@ -63,7 +63,7 @@ function getDeletedProductIds(): number[] {
 function getWishlistItems(): Wish[] {
   const deletedIds = getDeletedProductIds();
 
-  return products
+  return getWishlistProducts()
     .filter((item) => !deletedIds.includes(item.id))
     .map((item): Wish => {
       const storageKey = `dearly-product-detail-${item.id}`;
@@ -130,7 +130,6 @@ function Wishlist() {
   const [searchParams] = useSearchParams();
 
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
-
   const [sortType, setSortType] = useState<SortType>("latest");
 
   const items = getWishlistItems();
@@ -214,6 +213,7 @@ function Wishlist() {
                 onClick={() => navigate(`/wishlist/${item.id}`)}
               >
                 <WishlistCard
+                  productId={item.id}
                   name={item.name}
                   price={item.price}
                   status={item.status}

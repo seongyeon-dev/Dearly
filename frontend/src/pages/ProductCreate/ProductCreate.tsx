@@ -1,12 +1,17 @@
+
+import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import ImageUpload from "./ImageUpload/ImageUpload";
 import ProductForm from "./ProductForm/ProductForm";
+
 import "./ProductCreate.css";
 
 function ProductCreate() {
   const navigate = useNavigate();
+
+  const [images, setImages] = useState<File[]>([]);
 
   return (
     <main className="product-create">
@@ -26,8 +31,12 @@ function ProductCreate() {
         </section>
 
         <div className="product-content">
-          <ImageUpload />
-          <ProductForm />
+          <ImageUpload
+            images={images}
+            onImagesChange={setImages}
+          />
+
+          <ProductForm images={images} />
         </div>
       </div>
     </main>
