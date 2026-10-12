@@ -30,7 +30,7 @@ function PurchaseItem({
 
     setProductImage(image ?? null);
 
-    const request = indexedDB.open("dearly-images", 1);
+    const request = indexedDB.open("dearly-images", 2);
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -38,49 +38,77 @@ function PurchaseItem({
       if (!db.objectStoreNames.contains("products")) {
         db.createObjectStore("products");
       }
+
+      if (!db.objectStoreNames.contains("profiles")) {
+        db.createObjectStore("profiles");
+      }
     };
 
     request.onsuccess = () => {
-      database = request.result;
+      const db = request.result;
+      database = db;
 
       if (!isActive) {
-        database.close();
+        db.close();
+        database = null;
         return;
       }
 
-      const transaction = database.transaction("products", "readonly");
+      if (!db.objectStoreNames.contains("products")) {
+        console.error("상품 이미지 저장소가 없습니다.");
+        db.close();
+        database = null;
+        return;
+      }
 
+      const transaction = db.transaction("products", "readonly");
       const store = transaction.objectStore("products");
       const getRequest = store.get(wishId);
 
       getRequest.onsuccess = () => {
-        if (!isActive) return;
+        if (!isActive) {
+          return;
+        }
 
-        const images = getRequest.result;
+        const result: unknown = getRequest.result;
 
         if (
-          Array.isArray(images) &&
-          images.length > 0 &&
-          images[0] instanceof Blob
+          Array.isArray(result) &&
+          result.length > 0 &&
+          result[0] instanceof Blob
         ) {
-          objectUrl = URL.createObjectURL(images[0]);
+          objectUrl = URL.createObjectURL(result[0]);
           setProductImage(objectUrl);
         }
       };
 
+      getRequest.onerror = () => {
+        console.error("상품 이미지 조회에 실패했습니다.");
+      };
+
       transaction.oncomplete = () => {
-        database?.close();
-        database = null;
+        db.close();
+
+        if (database === db) {
+          database = null;
+        }
       };
 
       transaction.onerror = () => {
-        database?.close();
-        database = null;
+        console.error("상품 이미지 트랜잭션 오류");
+        db.close();
+
+        if (database === db) {
+          database = null;
+        }
       };
     };
 
     request.onerror = () => {
-      console.error("상품 이미지를 불러오지 못했습니다.");
+      console.error(
+        "상품 이미지 데이터베이스를 열지 못했습니다.",
+        request.error,
+      );
     };
 
     return () => {
@@ -90,7 +118,10 @@ function PurchaseItem({
         URL.revokeObjectURL(objectUrl);
       }
 
-      database?.close();
+      if (database) {
+        database.close();
+        database = null;
+      }
     };
   }, [wishId, image]);
 
