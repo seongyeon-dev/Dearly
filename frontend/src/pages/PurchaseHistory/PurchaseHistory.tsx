@@ -1,42 +1,41 @@
-import type { Purchase } from "../../types/purchase";
+
+import { useState } from "react";
+
+import MonthSelector from "../../components/MonthSelector/MonthSelector";
+
+import {
+  getMonthlyPurchases,
+  getMonthlyTotal,
+} from "../../utils/purchaseStorage";
 
 import PurchaseItem from "./PurchaseItem/PurchaseItem";
 import PurchaseSummary from "./PurchaseSummary/PurchaseSummary";
 
 import "./PurchaseHistory.css";
 
-const purchaseItems: Purchase[] = [
-  {
-    wishId: 1,
-    name: "롬앤 쥬시래스팅 틴트",
-    category: "뷰티",
-    date: "2026.09.30",
-    price: "13,000원",
-  },
-  {
-    wishId: 2,
-    name: "에스트라 아토베리어 크림",
-    category: "뷰티",
-    date: "2026.09.28",
-    price: "32,000원",
-  },
-  {
-    wishId: 3,
-    name: "나이키 에어포스 1",
-    category: "패션",
-    date: "2026.09.20",
-    price: "139,000원",
-  },
-  {
-    wishId: 4,
-    name: "무인양품 테이블 조명",
-    category: "라이프스타일",
-    date: "2026.09.15",
-    price: "59,000원",
-  },
-];
+function getCurrentMonth(): string {
+  const today = new Date();
+
+  return `${today.getFullYear()}-${String(
+    today.getMonth() + 1,
+  ).padStart(2, "0")}`;
+}
 
 function PurchaseHistory() {
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
+
+  const filteredPurchases = getMonthlyPurchases(selectedMonth);
+
+  const totalAmount = getMonthlyTotal(selectedMonth);
+
+  const formatPrice = (price: number): string => {
+    return `${price.toLocaleString("ko-KR")}원`;
+  };
+
+  const formatDate = (date: string): string => {
+    return date.replaceAll("-", ".");
+  };
+
   return (
     <main className="purchase-history">
       <div className="purchase-container">
@@ -46,14 +45,16 @@ function PurchaseHistory() {
             <p>구매한 상품과 소비 내역을 확인해보세요.</p>
           </div>
 
-          <select className="purchase-month" defaultValue="2026-10">
-            <option value="2026-10">2026년 10월</option>
-            <option value="2026-09">2026년 9월</option>
-            <option value="2026-08">2026년 8월</option>
-          </select>
+          <MonthSelector
+            value={selectedMonth}
+            onChange={setSelectedMonth}
+          />
         </div>
 
-        <PurchaseSummary />
+        <PurchaseSummary
+          totalAmount={totalAmount}
+          purchaseCount={filteredPurchases.length}
+        />
 
         <section className="purchase-list-section">
           <div className="purchase-list-header">
@@ -61,16 +62,22 @@ function PurchaseHistory() {
           </div>
 
           <div className="purchase-list">
-            {purchaseItems.map((item) => (
-              <PurchaseItem
-                key={item.wishId}
-                wishId={item.wishId}
-                name={item.name}
-                category={item.category}
-                date={item.date}
-                price={item.price}
-              />
-            ))}
+            {filteredPurchases.length > 0 ? (
+              filteredPurchases.map((item) => (
+                <PurchaseItem
+                  key={item.wishId}
+                  wishId={item.wishId}
+                  name={item.name}
+                  category={item.category}
+                  date={formatDate(item.date)}
+                  price={formatPrice(item.amount)}
+                />
+              ))
+            ) : (
+              <p className="purchase-empty-message">
+                선택한 달의 구매 내역이 없습니다.
+              </p>
+            )}
           </div>
         </section>
       </div>
