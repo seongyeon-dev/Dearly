@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { products } from "../../data/products";
+import type { WishCategory } from "../../types/wish";
 import ProductImages from "./ProductImages/ProductImages";
 import ProductInfo from "./ProductInfo/ProductInfo";
 import PurchaseModal, {
@@ -31,53 +33,22 @@ type StoredProduct = {
   purchaseData: PurchaseData | null;
 };
 
-type ProductItem = {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
+const categoryNames: Record<WishCategory, string> = {
+  BEAUTY: "뷰티",
+  FASHION: "패션",
+  LIFESTYLE: "라이프스타일",
+  OTHER: "기타",
 };
 
-const products: ProductItem[] = [
-  {
-    id: 1,
-    name: "롬앤 쥬시래스팅 틴트",
-    price: 13000,
-    category: "뷰티",
-  },
-  {
-    id: 2,
-    name: "에스트라 아토베리어 크림",
-    price: 32000,
-    category: "뷰티",
-  },
-  {
-    id: 3,
-    name: "나이키 에어포스 1",
-    price: 139000,
-    category: "패션",
-  },
-  {
-    id: 4,
-    name: "클리오 킬커버 쿠션",
-    price: 32000,
-    category: "뷰티",
-  },
-  {
-    id: 5,
-    name: "무인양품 테이블 조명",
-    price: 59000,
-    category: "라이프스타일",
-  },
-  {
-    id: 6,
-    name: "폴로 케이블 니트",
-    price: 169000,
-    category: "패션",
-  },
-];
+function parsePrice(price: string): number {
+  return Number(price.replace(/[^\d]/g, ""));
+}
 
-function createInitialProduct(id: number, price: number): StoredProduct {
+function createInitialProduct(
+  id: number,
+  price: number,
+  initialStatus: ProductStatus,
+): StoredProduct {
   return {
     details: {
       plannedDate: id === 1 ? "2026-10-15" : "",
@@ -88,13 +59,17 @@ function createInitialProduct(id: number, price: number): StoredProduct {
           ? "색이 생각보다 예쁘고 요즘 제일 자주 손이 가는 틴트. 세일하면 바로 사야지!"
           : "",
     },
-    status: "WANT",
+    status: initialStatus,
     purchaseData: null,
   };
 }
 
-function loadProduct(id: number, price: number): StoredProduct {
-  const initialProduct = createInitialProduct(id, price);
+function loadProduct(
+  id: number,
+  price: number,
+  initialStatus: ProductStatus,
+): StoredProduct {
+  const initialProduct = createInitialProduct(id, price, initialStatus);
 
   try {
     const saved = localStorage.getItem(`dearly-product-detail-${id}`);
@@ -157,7 +132,6 @@ function ProductDetail() {
   const navigate = useNavigate();
 
   const { wishId } = useParams<{ wishId: string }>();
-
   const productId = Number(wishId);
 
   const deletedProductIds = getDeletedProductIds();
@@ -166,8 +140,21 @@ function ProductDetail() {
     (item) => item.id === productId && !deletedProductIds.includes(item.id),
   );
 
+  const productPrice = productInfo ? parsePrice(productInfo.price) : 0;
+
+  const productCategory = productInfo
+    ? categoryNames[productInfo.category]
+    : "";
+
+  const initialStatus: ProductStatus =
+    productInfo?.statusClass === "bought"
+      ? "BOUGHT"
+      : productInfo?.statusClass === "considering"
+        ? "CONSIDERING"
+        : "WANT";
+
   const [product, setProduct] = useState<StoredProduct>(() =>
-    loadProduct(productId, productInfo?.price ?? 0),
+    loadProduct(productId, productPrice, initialStatus),
   );
 
   const [details, setDetails] = useState<ProductDetails>(product.details);
@@ -179,12 +166,16 @@ function ProductDetail() {
       return;
     }
 
-    const loadedProduct = loadProduct(productInfo.id, productInfo.price);
+    const loadedProduct = loadProduct(
+      productInfo.id,
+      parsePrice(productInfo.price),
+      initialStatus,
+    );
 
     setProduct(loadedProduct);
     setDetails(loadedProduct.details);
     setIsPurchaseModalOpen(false);
-  }, [productId, productInfo]);
+  }, [productId, productInfo, initialStatus]);
 
   useEffect(() => {
     if (!productInfo || product.status !== "BOUGHT" || !product.purchaseData) {
@@ -202,7 +193,7 @@ function ProductDetail() {
     const success = savePurchase({
       wishId: productInfo.id,
       name: productInfo.name,
-      category: productInfo.category,
+      category: productCategory,
       amount: product.purchaseData.amount,
       date: product.purchaseData.date,
       store: product.purchaseData.store,
@@ -212,7 +203,7 @@ function ProductDetail() {
     if (!success) {
       console.error("구매 기록 저장에 실패했습니다.");
     }
-  }, [product, productInfo]);
+  }, [product, productInfo, productCategory]);
 
   const saveProduct = (nextProduct: StoredProduct): boolean => {
     if (!productInfo) {
@@ -256,7 +247,6 @@ function ProductDetail() {
         }
       } catch {
         alert("구매 링크는 http:// 또는 https://로 시작해야 합니다.");
-
         return;
       }
     }
@@ -294,7 +284,7 @@ function ProductDetail() {
       const saved = savePurchase({
         wishId: productInfo.id,
         name: productInfo.name,
-        category: productInfo.category,
+        category: productCategory,
         amount: product.purchaseData.amount,
         date: product.purchaseData.date,
         store: product.purchaseData.store,
@@ -321,7 +311,7 @@ function ProductDetail() {
     const saved = savePurchase({
       wishId: productInfo.id,
       name: productInfo.name,
-      category: productInfo.category,
+      category: productCategory,
       amount: data.amount,
       date: data.date,
       store: data.store,
@@ -384,7 +374,6 @@ function ProductDetail() {
       localStorage.removeItem(`dearly-product-detail-${productInfo.id}`);
 
       alert("상품이 삭제되었습니다.");
-
       navigate("/wishlist");
     } catch {
       alert("상품 삭제에 실패했습니다. 다시 시도해 주세요.");
@@ -415,7 +404,6 @@ function ProductDetail() {
             onClick={() => navigate("/wishlist")}
           >
             <ArrowLeft size={18} strokeWidth={1.7} />
-
             <span>위시리스트로 돌아가기</span>
           </button>
 
@@ -443,8 +431,8 @@ function ProductDetail() {
 
           <ProductInfo
             name={productInfo.name}
-            price={productInfo.price}
-            category={productInfo.category}
+            price={productPrice}
+            category={productCategory}
             status={product.status}
             onStatusChange={handleStatusChange}
             purchaseData={product.purchaseData}
@@ -457,7 +445,7 @@ function ProductDetail() {
       <PurchaseModal
         isOpen={isPurchaseModalOpen}
         productName={productInfo.name}
-        productPrice={productInfo.price}
+        productPrice={productPrice}
         onClose={() => setIsPurchaseModalOpen(false)}
         onSave={handlePurchaseSave}
       />
