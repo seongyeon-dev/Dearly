@@ -14,10 +14,30 @@ type CategoryChartProps = {
 };
 
 const categoryNames = [
-  { name: "뷰티", className: "beauty", color: "var(--color-primary)" },
-  { name: "패션", className: "fashion", color: "#ef91ad" },
-  { name: "라이프스타일", className: "lifestyle", color: "#c8a9ed" },
-  { name: "기타", className: "other", color: "#e8c9d5" },
+  {
+    name: "뷰티",
+    code: "BEAUTY",
+    className: "beauty",
+    color: "var(--color-primary)",
+  },
+  {
+    name: "패션",
+    code: "FASHION",
+    className: "fashion",
+    color: "#ef91ad",
+  },
+  {
+    name: "라이프스타일",
+    code: "LIFESTYLE",
+    className: "lifestyle",
+    color: "#c8a9ed",
+  },
+  {
+    name: "기타",
+    code: "OTHER",
+    className: "other",
+    color: "#e8c9d5",
+  },
 ];
 
 function CategoryChart({ selectedMonth }: CategoryChartProps) {
@@ -30,7 +50,11 @@ function CategoryChart({ selectedMonth }: CategoryChartProps) {
 
   const categories: Category[] = categoryNames.map((category) => {
     const amount = purchases
-      .filter((purchase) => purchase.category === category.name)
+      .filter(
+        (purchase) =>
+          purchase.category === category.name ||
+          purchase.category === category.code,
+      )
       .reduce((total, purchase) => total + purchase.amount, 0);
 
     const percentage = totalSpending > 0 ? (amount / totalSpending) * 100 : 0;
