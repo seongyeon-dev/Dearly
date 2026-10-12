@@ -137,6 +137,57 @@ function getDeletedProductIds(): number[] {
   }
 }
 
+function deleteProductImages(productId: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("dearly-images", 1);
+
+    request.onupgradeneeded = () => {
+      const database = request.result;
+
+      if (!database.objectStoreNames.contains("products")) {
+        database.createObjectStore("products");
+      }
+    };
+
+    request.onerror = () => {
+      reject(new Error("이미지 저장소를 열 수 없습니다."));
+    };
+
+    request.onsuccess = () => {
+      const database = request.result;
+
+      let transaction: IDBTransaction;
+
+      try {
+        transaction = database.transaction("products", "readwrite");
+
+        const store = transaction.objectStore("products");
+
+        store.delete(productId);
+      } catch (error) {
+        database.close();
+        reject(error);
+        return;
+      }
+
+      transaction.oncomplete = () => {
+        database.close();
+        resolve();
+      };
+
+      transaction.onerror = () => {
+        database.close();
+        reject(new Error("상품 이미지 삭제에 실패했습니다."));
+      };
+
+      transaction.onabort = () => {
+        database.close();
+        reject(new Error("상품 이미지 삭제가 취소되었습니다."));
+      };
+    };
+  });
+}
+
 function ProductDetail() {
   const navigate = useNavigate();
   const { wishId } = useParams<{ wishId: string }>();
@@ -171,6 +222,8 @@ function ProductDetail() {
   const [details, setDetails] = useState<ProductDetails>(product.details);
 
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!productInfo) {
@@ -347,8 +400,8 @@ function ProductDetail() {
     }
   };
 
-  const handleDelete = () => {
-    if (!productInfo) {
+  const handleDelete = async () => {
+    if (!productInfo || isDeleting) {
       return;
     }
 
@@ -358,7 +411,11 @@ function ProductDetail() {
       return;
     }
 
+    setIsDeleting(true);
+
     try {
+      await deleteProductImages(productInfo.id);
+
       const previousDeletedIds = getDeletedProductIds();
 
       const updatedDeletedIds = [
@@ -386,8 +443,12 @@ function ProductDetail() {
 
       alert("상품이 삭제되었습니다.");
       navigate("/wishlist");
-    } catch {
+    } catch (error) {
+      console.error("상품 삭제 실패:", error);
+
       alert("상품 삭제에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -423,6 +484,7 @@ function ProductDetail() {
               type="button"
               className="edit-button"
               onClick={handleSaveEdit}
+              disabled={isDeleting}
             >
               수정
             </button>
@@ -431,8 +493,9 @@ function ProductDetail() {
               type="button"
               className="delete-button"
               onClick={handleDelete}
+              disabled={isDeleting}
             >
-              삭제
+              {isDeleting ? "삭제 중..." : "삭제"}
             </button>
           </div>
         </div>
