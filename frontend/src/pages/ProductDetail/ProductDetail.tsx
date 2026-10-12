@@ -162,7 +162,6 @@ function deleteProductImages(productId: number): Promise<void> {
         transaction = database.transaction("products", "readwrite");
 
         const store = transaction.objectStore("products");
-
         store.delete(productId);
       } catch (error) {
         database.close();
@@ -225,6 +224,11 @@ function ProductDetail() {
 
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [purchaseRecord, setPurchaseRecord] = useState(
+    () =>
+      getPurchases().find((purchase) => purchase.wishId === productId) ?? null,
+  );
+
   useEffect(() => {
     if (!productInfo) {
       return;
@@ -239,6 +243,11 @@ function ProductDetail() {
     setProduct(loadedProduct);
     setDetails(loadedProduct.details);
     setIsPurchaseModalOpen(false);
+
+    setPurchaseRecord(
+      getPurchases().find((purchase) => purchase.wishId === productInfo.id) ??
+        null,
+    );
   }, [productId, productInfo, productPrice, initialStatus]);
 
   useEffect(() => {
@@ -246,11 +255,12 @@ function ProductDetail() {
       return;
     }
 
-    const alreadySaved = getPurchases().some(
+    const existingPurchase = getPurchases().find(
       (purchase) => purchase.wishId === productInfo.id,
     );
 
-    if (alreadySaved) {
+    if (existingPurchase) {
+      setPurchaseRecord(existingPurchase);
       return;
     }
 
@@ -264,7 +274,12 @@ function ProductDetail() {
       memo: product.purchaseData.memo,
     });
 
-    if (!success) {
+    if (success) {
+      setPurchaseRecord(
+        getPurchases().find((purchase) => purchase.wishId === productInfo.id) ??
+          null,
+      );
+    } else {
       console.error("구매 기록 저장에 실패했습니다.");
     }
   }, [product, productInfo, productCategory]);
@@ -332,7 +347,7 @@ function ProductDetail() {
       return;
     }
 
-    if (nextStatus === "BOUGHT" && !product.purchaseData) {
+    if (nextStatus === "BOUGHT" && !purchaseRecord && !product.purchaseData) {
       setIsPurchaseModalOpen(true);
       return;
     }
@@ -344,6 +359,8 @@ function ProductDetail() {
         alert("구매 기록 변경에 실패했습니다.");
         return;
       }
+
+      setPurchaseRecord(null);
     } else if (product.purchaseData) {
       const saved = savePurchase({
         wishId: productInfo.id,
@@ -359,6 +376,11 @@ function ProductDetail() {
         alert("구매 기록 저장에 실패했습니다.");
         return;
       }
+
+      setPurchaseRecord(
+        getPurchases().find((purchase) => purchase.wishId === productInfo.id) ??
+          null,
+      );
     }
 
     saveProduct({
@@ -394,9 +416,15 @@ function ProductDetail() {
     };
 
     if (saveProduct(updatedProduct)) {
+      setPurchaseRecord(
+        getPurchases().find((purchase) => purchase.wishId === productInfo.id) ??
+          null,
+      );
+
       setIsPurchaseModalOpen(false);
     } else {
       deletePurchase(productInfo.id);
+      setPurchaseRecord(null);
     }
   };
 
@@ -509,7 +537,16 @@ function ProductDetail() {
             category={productCategory}
             status={product.status}
             onStatusChange={handleStatusChange}
-            purchaseData={product.purchaseData}
+            purchaseData={
+              purchaseRecord
+                ? {
+                    amount: purchaseRecord.amount,
+                    date: purchaseRecord.date,
+                    store: purchaseRecord.store,
+                    memo: purchaseRecord.memo,
+                  }
+                : null
+            }
             details={details}
             onDetailsChange={setDetails}
           />
