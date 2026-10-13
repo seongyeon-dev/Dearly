@@ -202,8 +202,32 @@ function ProductDetail() {
     }
   };
 
-  const handleStatusChange = (_nextStatus: ProductStatus) => {
-    alert("상태 변경은 구매 기록 API 연결 후 사용할 수 있습니다.");
+  const handleStatusChange = async (nextStatus: ProductStatus) => {
+    if (!productInfo || isSaving || isDeleting) {
+      return;
+    }
+
+    if (nextStatus === status) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const updatedProduct = await updateWish(productInfo.wish_id, {
+        status: nextStatus,
+      });
+
+      setProductInfo(updatedProduct);
+      setStatus(updatedProduct.status);
+
+      alert("상품 상태가 변경되었습니다!");
+    } catch (error) {
+      console.error("상품 상태 변경 실패:", error);
+      alert("상품 상태 변경에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async () => {
