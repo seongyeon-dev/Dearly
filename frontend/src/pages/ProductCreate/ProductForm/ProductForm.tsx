@@ -1,13 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type {
-  WishCategory,
-  WishStatus,
-  WishStatusClass,
-} from "../../../types/wish";
-
-import { saveWishlistProduct } from "../../../utils/wishlistStorage";
+import type { WishCategory } from "../../../types/wish";
+import { createWish } from "../../../api/wishApi";
 import { savePurchase } from "../../../utils/purchaseStorage";
 
 import PurchaseModal, {
@@ -20,24 +15,6 @@ type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
 
 type ProductFormProps = {
   images: File[];
-};
-
-const statusMap: Record<
-  ProductStatus,
-  { status: WishStatus; statusClass: WishStatusClass }
-> = {
-  WANT: {
-    status: "사고 싶어요",
-    statusClass: "want",
-  },
-  CONSIDERING: {
-    status: "고민 중",
-    statusClass: "considering",
-  },
-  BOUGHT: {
-    status: "샀어요",
-    statusClass: "bought",
-  },
 };
 
 const categoryNames: Record<WishCategory, string> = {
@@ -144,39 +121,25 @@ function ProductForm({ images }: ProductFormProps) {
     try {
       const numericPrice = Number(price);
 
-      const savedProduct = saveWishlistProduct({
+      const savedProduct = await createWish({
         name: name.trim(),
         category,
-        price: `${numericPrice.toLocaleString("ko-KR")}원`,
-        status: statusMap[status].status,
-        statusClass: statusMap[status].statusClass,
+        status,
+        expected_price: numericPrice,
+        planned_date: plannedDate || null,
+        purchase_link: purchaseLink.trim() || null,
+        memo: memo || null,
       });
 
-      savedProductId = savedProduct.id;
-
-      const productDetails = {
-        plannedDate,
-        expectedPrice: String(numericPrice),
-        purchaseLink: purchaseLink.trim(),
-        memo,
-      };
-
-      localStorage.setItem(
-        `dearly-product-detail-${savedProduct.id}`,
-        JSON.stringify({
-          details: productDetails,
-          status,
-          purchaseData,
-        }),
-      );
+      savedProductId = savedProduct.wish_id;
 
       if (images.length > 0) {
-        await saveProductImages(savedProduct.id, images);
+        await saveProductImages(savedProductId, images);
       }
 
       if (purchaseData) {
         const success = savePurchase({
-          wishId: savedProduct.id,
+          wishId: savedProductId,
           name: savedProduct.name,
           category: categoryNames[category],
           amount: purchaseData.amount,
@@ -198,10 +161,10 @@ function ProductForm({ images }: ProductFormProps) {
 
       if (savedProductId !== null) {
         alert(
-          "상품 저장이 일부 완료되었을 수 있습니다. 위시리스트를 확인한 후 다시 시도해주세요.",
+          "상품은 MySQL에 등록되었지만 이미지 또는 구매 기록 저장에 문제가 발생했습니다. 위시리스트를 확인해주세요.",
         );
       } else {
-        alert("상품 저장 중 문제가 발생했습니다. 다시 시도해주세요.");
+        alert("상품 등록에 실패했습니다. 다시 시도해주세요.");
       }
     } finally {
       setIsSaving(false);
