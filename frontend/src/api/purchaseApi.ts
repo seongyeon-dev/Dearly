@@ -25,7 +25,9 @@ export interface UpdatePurchaseRequest {
 const API_BASE_URL = "http://localhost:3000/api/purchases";
 
 export async function fetchPurchases(): Promise<PurchaseResponse[]> {
-  const response = await fetch(API_BASE_URL);
+  const response = await fetch(API_BASE_URL, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
     throw new Error("구매 기록 목록 조회에 실패했습니다.");
@@ -39,6 +41,7 @@ export async function createPurchase(
 ): Promise<PurchaseResponse> {
   const response = await fetch(API_BASE_URL, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -55,7 +58,9 @@ export async function createPurchase(
 export async function fetchPurchaseByWishId(
   wishId: number,
 ): Promise<PurchaseResponse | null> {
-  const response = await fetch(`${API_BASE_URL}/wish/${wishId}`);
+  const response = await fetch(`${API_BASE_URL}/wish/${wishId}`, {
+    credentials: "include",
+  });
 
   if (response.status === 404) {
     return null;
@@ -74,6 +79,7 @@ export async function updatePurchase(
 ): Promise<PurchaseResponse> {
   const response = await fetch(`${API_BASE_URL}/wish/${wishId}`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -90,6 +96,7 @@ export async function updatePurchase(
 export async function deletePurchase(wishId: number): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/wish/${wishId}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
