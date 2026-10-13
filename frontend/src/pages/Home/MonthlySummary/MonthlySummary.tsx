@@ -77,6 +77,7 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
           setSpentAmount(monthlyTotal);
         } else {
           console.error("월별 소비 금액 조회 실패:", purchasesResult.reason);
+
           setLoadError("소비 금액을 불러오지 못했습니다.");
         }
 
@@ -112,24 +113,19 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
 
   const formatPrice = (price: number) => `${price.toLocaleString("ko-KR")}원`;
 
-  const handleSaveBudget = async (newBudget: number) => {
-    try {
-      const savedBudget = await saveBudget({
-        month,
-        amount: newBudget,
-      });
+  const handleSaveBudget = async (newBudget: number): Promise<void> => {
+    const savedBudget = await saveBudget({
+      month,
+      amount: newBudget,
+    });
 
-      setBudgets((previous) => ({
-        ...previous,
-        [month]: savedBudget.limit_amount,
-      }));
+    setBudgets((previous) => ({
+      ...previous,
+      [month]: savedBudget.limit_amount,
+    }));
 
-      setBudgetError("");
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("예산 저장 실패:", error);
-      alert("예산을 저장하지 못했습니다.");
-    }
+    setBudgetError("");
+    setIsModalOpen(false);
   };
 
   const hasError = Boolean(loadError || budgetError);
@@ -196,7 +192,7 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
                   : loadError || formatPrice(spentAmount)}
               </strong>
 
-              {!isLoading && !loadError && <small>{usedPercent}% 사용</small>}
+              {!loading && !hasError && <small>{usedPercent}% 사용</small>}
             </div>
           </div>
 
