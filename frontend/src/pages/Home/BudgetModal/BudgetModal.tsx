@@ -8,7 +8,7 @@ type BudgetModalProps = {
   budget: number;
   month: string;
   onClose: () => void;
-  onSave: (budget: number) => void;
+  onSave: (budget: number) => Promise<void>;
 };
 
 function BudgetModal({
@@ -20,6 +20,7 @@ function BudgetModal({
 }: BudgetModalProps) {
   const [inputBudget, setInputBudget] = useState(String(budget));
   const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -29,7 +30,7 @@ function BudgetModal({
   }, [isOpen, budget]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isSaving) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -42,7 +43,7 @@ function BudgetModal({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, isSaving, onClose]);
 
   if (!isOpen) return null;
 
@@ -50,21 +51,39 @@ function BudgetModal({
 
   const previewBudget = Number(inputBudget);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (isSaving) return;
+
     if (
       inputBudget.trim() === "" ||
       !Number.isSafeInteger(previewBudget) ||
-      previewBudget < 0
+      previewBudget < 0 ||
+      previewBudget > 2147483647
     ) {
-      setError("0원 이상의 올바른 예산을 입력해 주세요.");
+      setError("0원 이상 2,147,483,647원 이하의 예산을 입력해 주세요.");
       return;
     }
 
-    onSave(previewBudget);
+    setIsSaving(true);
+    setError("");
+
+    try {
+      await onSave(previewBudget);
+    } catch (error) {
+      console.error("예산 저장 실패:", error);
+      setError("예산을 저장하지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="budget-modal-overlay" onClick={onClose}>
+    <div
+      className="budget-modal-overlay"
+      onClick={() => {
+        if (!isSaving) onClose();
+      }}
+    >
       <div
         className="budget-modal"
         role="dialog"
@@ -79,6 +98,7 @@ function BudgetModal({
             type="button"
             className="budget-modal-close"
             onClick={onClose}
+            disabled={isSaving}
             aria-label="닫기"
           >
             <X size={20} strokeWidth={1.7} />
@@ -108,8 +128,10 @@ function BudgetModal({
               id="budget-amount"
               type="number"
               min="0"
+              max="2147483647"
               step="1"
               value={inputBudget}
+              disabled={isSaving}
               onChange={(event) => {
                 setInputBudget(event.target.value);
                 setError("");
@@ -147,6 +169,7 @@ function BudgetModal({
             type="button"
             className="budget-modal-cancel"
             onClick={onClose}
+            disabled={isSaving}
           >
             취소
           </button>
@@ -154,9 +177,10 @@ function BudgetModal({
           <button
             type="button"
             className="budget-modal-save"
-            onClick={handleSave}
+            onClick={() => void handleSave()}
+            disabled={isSaving}
           >
-            저장하기
+            {isSaving ? "저장 중..." : "저장하기"}
           </button>
         </div>
       </div>
