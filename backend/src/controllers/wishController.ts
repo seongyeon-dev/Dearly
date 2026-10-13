@@ -1,3 +1,4 @@
+
 import type { Request, Response } from "express";
 import {
   getWishes,
@@ -31,7 +32,8 @@ function isValidDate(value: string): boolean {
   const date = new Date(`${value}T00:00:00Z`);
 
   return (
-    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+    !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value
   );
 }
 
@@ -47,7 +49,14 @@ function isValidPurchaseLink(value: string): boolean {
 
 export async function getWishList(req: Request, res: Response) {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
 
     const wishes = await getWishes(userId);
 
@@ -63,7 +72,15 @@ export async function getWishList(req: Request, res: Response) {
 
 export async function getWishDetail(req: Request, res: Response) {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = Number(req.params.id);
 
     if (!Number.isSafeInteger(wishId) || wishId <= 0) {
@@ -94,7 +111,15 @@ export async function getWishDetail(req: Request, res: Response) {
 
 export async function createWish(req: Request, res: Response) {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const body = req.body as Partial<CreateWishInput> | null;
 
     if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -116,7 +141,8 @@ export async function createWish(req: Request, res: Response) {
       (body.planned_date != null &&
         (typeof body.planned_date !== "string" ||
           !isValidDate(body.planned_date))) ||
-      (body.purchase_link != null && typeof body.purchase_link !== "string") ||
+      (body.purchase_link != null &&
+        typeof body.purchase_link !== "string") ||
       (body.memo != null &&
         (typeof body.memo !== "string" || body.memo.length > 300))
     ) {
@@ -160,7 +186,15 @@ export async function createWish(req: Request, res: Response) {
 
 export async function updateWish(req: Request, res: Response) {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = Number(req.params.id);
 
     if (!Number.isSafeInteger(wishId) || wishId <= 0) {
@@ -279,7 +313,15 @@ export async function updateWish(req: Request, res: Response) {
 
 export async function deleteWish(req: Request, res: Response) {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = Number(req.params.id);
 
     if (!Number.isSafeInteger(wishId) || wishId <= 0) {
