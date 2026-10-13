@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import {
   getWishes,
   getWishById,
@@ -8,6 +8,42 @@ import {
   type CreateWishInput,
   type UpdateWishInput,
 } from "../services/wishService";
+
+const categories = ["BEAUTY", "FASHION", "LIFESTYLE", "OTHER"] as const;
+
+const statuses = ["WANT", "CONSIDERING", "BOUGHT"] as const;
+
+const allowedUpdateFields = [
+  "name",
+  "category",
+  "expected_price",
+  "planned_date",
+  "purchase_link",
+  "memo",
+  "status",
+];
+
+function isValidDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00Z`);
+
+  return (
+    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+  );
+}
+
+function isValidPurchaseLink(value: string): boolean {
+  try {
+    const url = new URL(value);
+
+    return ["http:", "https:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
 
 export async function getWishList(req: Request, res: Response) {
   try {
@@ -59,22 +95,27 @@ export async function getWishDetail(req: Request, res: Response) {
 export async function createWish(req: Request, res: Response) {
   try {
     const userId = 1;
-    const body = req.body as Partial<CreateWishInput>;
+    const body = req.body as Partial<CreateWishInput> | null;
 
-    const categories = ["BEAUTY", "FASHION", "LIFESTYLE", "OTHER"];
-    const statuses = ["WANT", "CONSIDERING", "BOUGHT"];
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      res.status(400).json({
+        message: "상품 정보를 입력해주세요.",
+      });
+      return;
+    }
 
     if (
       typeof body.name !== "string" ||
       !body.name.trim() ||
-      !categories.includes(body.category ?? "") ||
-      !statuses.includes(body.status ?? "") ||
+      body.name.trim().length > 150 ||
+      !categories.some((item) => item === body.category) ||
+      !statuses.some((item) => item === body.status) ||
       typeof body.expected_price !== "number" ||
       !Number.isSafeInteger(body.expected_price) ||
       body.expected_price <= 0 ||
       (body.planned_date != null &&
         (typeof body.planned_date !== "string" ||
-          !/^\d{4}-\d{2}-\d{2}$/.test(body.planned_date))) ||
+          !isValidDate(body.planned_date))) ||
       (body.purchase_link != null && typeof body.purchase_link !== "string") ||
       (body.memo != null &&
         (typeof body.memo !== "string" || body.memo.length > 300))
@@ -85,19 +126,11 @@ export async function createWish(req: Request, res: Response) {
       return;
     }
 
-    if (body.purchase_link) {
-      try {
-        const url = new URL(body.purchase_link);
-
-        if (!["http:", "https:"].includes(url.protocol)) {
-          throw new Error("Invalid URL");
-        }
-      } catch {
-        res.status(400).json({
-          message: "올바른 구매 링크를 입력해주세요.",
-        });
-        return;
-      }
+    if (body.purchase_link && !isValidPurchaseLink(body.purchase_link)) {
+      res.status(400).json({
+        message: "올바른 구매 링크를 입력해주세요.",
+      });
+      return;
     }
 
     const data: CreateWishInput = {
@@ -106,8 +139,8 @@ export async function createWish(req: Request, res: Response) {
       status: body.status!,
       expected_price: body.expected_price,
       planned_date: body.planned_date || null,
-      purchase_link: body.purchase_link || null,
-      memo: body.memo || null,
+      purchase_link: body.purchase_link?.trim() || null,
+      memo: body.memo?.trim() || null,
     };
 
     const wishId = await createWishInDb(userId, data);
@@ -146,26 +179,25 @@ export async function updateWish(req: Request, res: Response) {
       return;
     }
 
-    const allowedFields = [
-      "expected_price",
-      "planned_date",
-      "purchase_link",
-      "memo",
-      "status",
-    ];
-
     const keys = Object.keys(body);
 
-    if (keys.length === 0 || keys.some((key) => !allowedFields.includes(key))) {
+    if (
+      keys.length === 0 ||
+      keys.some((key) => !allowedUpdateFields.includes(key))
+    ) {
       res.status(400).json({
         message: "수정 가능한 항목을 확인해주세요.",
       });
       return;
     }
 
-    const statuses = ["WANT", "CONSIDERING", "BOUGHT"];
-
     if (
+      (body.name !== undefined &&
+        (typeof body.name !== "string" ||
+          !body.name.trim() ||
+          body.name.trim().length > 150)) ||
+      (body.category !== undefined &&
+        !categories.some((item) => item === body.category)) ||
       (body.expected_price !== undefined &&
         (typeof body.expected_price !== "number" ||
           !Number.isSafeInteger(body.expected_price) ||
@@ -173,14 +205,15 @@ export async function updateWish(req: Request, res: Response) {
       (body.planned_date !== undefined &&
         body.planned_date !== null &&
         (typeof body.planned_date !== "string" ||
-          !/^\d{4}-\d{2}-\d{2}$/.test(body.planned_date))) ||
+          !isValidDate(body.planned_date))) ||
       (body.purchase_link !== undefined &&
         body.purchase_link !== null &&
         typeof body.purchase_link !== "string") ||
       (body.memo !== undefined &&
         body.memo !== null &&
         (typeof body.memo !== "string" || body.memo.length > 300)) ||
-      (body.status !== undefined && !statuses.includes(body.status))
+      (body.status !== undefined &&
+        !statuses.some((item) => item === body.status))
     ) {
       res.status(400).json({
         message: "수정할 상품 정보를 확인해주세요.",
@@ -188,22 +221,44 @@ export async function updateWish(req: Request, res: Response) {
       return;
     }
 
-    if (body.purchase_link) {
-      try {
-        const url = new URL(body.purchase_link);
-
-        if (!["http:", "https:"].includes(url.protocol)) {
-          throw new Error("Invalid URL");
-        }
-      } catch {
-        res.status(400).json({
-          message: "올바른 구매 링크를 입력해주세요.",
-        });
-        return;
-      }
+    if (body.purchase_link && !isValidPurchaseLink(body.purchase_link)) {
+      res.status(400).json({
+        message: "올바른 구매 링크를 입력해주세요.",
+      });
+      return;
     }
 
-    const updatedWish = await updateWishInDb(userId, wishId, body);
+    const data: UpdateWishInput = {};
+
+    if (body.name !== undefined) {
+      data.name = body.name.trim();
+    }
+
+    if (body.category !== undefined) {
+      data.category = body.category;
+    }
+
+    if (body.expected_price !== undefined) {
+      data.expected_price = body.expected_price;
+    }
+
+    if (body.planned_date !== undefined) {
+      data.planned_date = body.planned_date || null;
+    }
+
+    if (body.purchase_link !== undefined) {
+      data.purchase_link = body.purchase_link?.trim() || null;
+    }
+
+    if (body.memo !== undefined) {
+      data.memo = body.memo?.trim() || null;
+    }
+
+    if (body.status !== undefined) {
+      data.status = body.status;
+    }
+
+    const updatedWish = await updateWishInDb(userId, wishId, data);
 
     if (!updatedWish) {
       res.status(404).json({
