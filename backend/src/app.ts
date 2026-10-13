@@ -6,6 +6,7 @@ import "dotenv/config";
 import wishRoutes from "./routes/wishRoutes";
 import purchaseRoutes from "./routes/purchaseRoutes";
 import wishImageRoutes from "./routes/wishImageRoutes";
+import budgetRoutes from "./routes/budgetRoutes";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 app.use("/api/wishes", wishImageRoutes);
 app.use("/api/wishes", wishRoutes);
 app.use("/api/purchases", purchaseRoutes);
+app.use("/api/budgets", budgetRoutes);
 
 const PORT = Number(process.env.PORT || 3000);
 
