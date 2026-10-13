@@ -4,6 +4,7 @@ import { ShoppingBag, CreditCard, CircleDollarSign } from "lucide-react";
 
 import BudgetModal from "../BudgetModal/BudgetModal";
 import { fetchPurchases } from "../../../api/purchaseApi";
+import { fetchBudget, saveBudget } from "../../../api/budgetApi";
 
 import "./MonthlySummary.css";
 
@@ -22,26 +23,6 @@ function getCurrentMonth(): string {
   )}`;
 }
 
-function getSavedBudget(month: string): number {
-  try {
-    const savedBudget = localStorage.getItem(`dearly-budget-${month}`);
-
-    if (savedBudget === null) {
-      return DEFAULT_BUDGET;
-    }
-
-    const parsedBudget = Number(savedBudget);
-
-    if (Number.isFinite(parsedBudget) && parsedBudget >= 0) {
-      return parsedBudget;
-    }
-
-    return DEFAULT_BUDGET;
-  } catch {
-    return DEFAULT_BUDGET;
-  }
-}
-
 function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
   const navigate = useNavigate();
 
@@ -50,6 +31,8 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
   const [spentAmount, setSpentAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [budgetLoading, setBudgetLoading] = useState(true);
+  const [budgetError, setBudgetError] = useState("");
 
   const month = selectedMonth || getCurrentMonth();
 
@@ -66,39 +49,55 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
     "0",
   )}`;
 
-  const budget = budgets[month] ?? getSavedBudget(month);
+  const budget = budgets[month] ?? DEFAULT_BUDGET;
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadMonthlySpending() {
+    async function loadMonthlyData() {
       setIsLoading(true);
+      setBudgetLoading(true);
       setLoadError("");
+      setBudgetError("");
       setSpentAmount(0);
 
       try {
-        const purchases = await fetchPurchases();
+        const [purchasesResult, budgetResult] = await Promise.allSettled([
+          fetchPurchases(),
+          fetchBudget(month),
+        ]);
 
         if (cancelled) return;
 
-        const monthlyTotal = purchases
-          .filter((purchase) => purchase.purchased_at.startsWith(month))
-          .reduce((total, purchase) => total + Number(purchase.amount), 0);
+        if (purchasesResult.status === "fulfilled") {
+          const monthlyTotal = purchasesResult.value
+            .filter((purchase) => purchase.purchased_at.startsWith(month))
+            .reduce((total, purchase) => total + Number(purchase.amount), 0);
 
-        setSpentAmount(monthlyTotal);
-      } catch (error) {
-        if (cancelled) return;
+          setSpentAmount(monthlyTotal);
+        } else {
+          console.error("월별 소비 금액 조회 실패:", purchasesResult.reason);
+          setLoadError("소비 금액을 불러오지 못했습니다.");
+        }
 
-        console.error("월별 소비 금액 조회 실패:", error);
-        setLoadError("소비 금액을 불러오지 못했습니다.");
+        if (budgetResult.status === "fulfilled") {
+          setBudgets((previous) => ({
+            ...previous,
+            [month]: budgetResult.value?.limit_amount ?? DEFAULT_BUDGET,
+          }));
+        } else {
+          console.error("예산 조회 실패:", budgetResult.reason);
+          setBudgetError("예산을 불러오지 못했습니다.");
+        }
       } finally {
         if (!cancelled) {
           setIsLoading(false);
+          setBudgetLoading(false);
         }
       }
     }
 
-    void loadMonthlySpending();
+    void loadMonthlyData();
 
     return () => {
       cancelled = true;
@@ -113,21 +112,28 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
 
   const formatPrice = (price: number) => `${price.toLocaleString("ko-KR")}원`;
 
-  const handleSaveBudget = (newBudget: number) => {
+  const handleSaveBudget = async (newBudget: number) => {
     try {
-      localStorage.setItem(`dearly-budget-${month}`, String(newBudget));
-    } catch {
+      const savedBudget = await saveBudget({
+        month,
+        amount: newBudget,
+      });
+
+      setBudgets((previous) => ({
+        ...previous,
+        [month]: savedBudget.limit_amount,
+      }));
+
+      setBudgetError("");
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("예산 저장 실패:", error);
       alert("예산을 저장하지 못했습니다.");
-      return;
     }
-
-    setBudgets((previous) => ({
-      ...previous,
-      [month]: newBudget,
-    }));
-
-    setIsModalOpen(false);
   };
+
+  const hasError = Boolean(loadError || budgetError);
+  const loading = isLoading || budgetLoading;
 
   return (
     <>
@@ -163,12 +169,17 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
                   type="button"
                   className="budget-edit-button"
                   onClick={() => setIsModalOpen(true)}
+                  disabled={budgetLoading || Boolean(budgetError)}
                 >
                   예산 수정
                 </button>
               </div>
 
-              <strong>{formatPrice(budget)}</strong>
+              <strong>
+                {budgetLoading
+                  ? "불러오는 중..."
+                  : budgetError || formatPrice(budget)}
+              </strong>
             </div>
           </div>
 
@@ -184,6 +195,7 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
                   ? "불러오는 중..."
                   : loadError || formatPrice(spentAmount)}
               </strong>
+
               {!isLoading && !loadError && <small>{usedPercent}% 사용</small>}
             </div>
           </div>
@@ -196,11 +208,12 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
             <div className="stat-text">
               <span>남은 예산</span>
               <strong>
-                {isLoading
+                {loading
                   ? "불러오는 중..."
-                  : loadError || formatPrice(remainingBudget)}
+                  : loadError || budgetError || formatPrice(remainingBudget)}
               </strong>
-              {!isLoading && !loadError && (
+
+              {!loading && !hasError && (
                 <small>
                   {remainingBudget < 0
                     ? "예산 초과"
@@ -218,20 +231,21 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
                 className="progress-value"
                 style={{
                   width:
-                    isLoading || loadError
+                    loading || hasError
                       ? "0%"
                       : `${Math.min(100, Math.max(0, usedPercent))}%`,
                 }}
               />
             </div>
 
-            <strong>{isLoading || loadError ? "-" : `${usedPercent}%`}</strong>
+            <strong>{loading || hasError ? "-" : `${usedPercent}%`}</strong>
           </div>
 
           <p>
-            {isLoading
-              ? "소비 금액을 불러오는 중..."
+            {loading
+              ? "예산 정보를 불러오는 중..."
               : loadError ||
+                budgetError ||
                 `${formatPrice(spentAmount)} / ${formatPrice(budget)}`}
           </p>
         </div>
