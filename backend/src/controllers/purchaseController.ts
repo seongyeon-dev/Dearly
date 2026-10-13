@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
+
 import {
   createPurchaseInDb,
   deletePurchaseInDb,
   getPurchaseByWishId,
+  getPurchasesByUserId,
   updatePurchaseInDb,
   type CreatePurchaseInput,
   type UpdatePurchaseInput,
@@ -39,7 +41,29 @@ function isValidPurchaseInput(body: unknown): body is UpdatePurchaseInput {
   );
 }
 
-export async function createPurchase(req: Request, res: Response) {
+export async function getPurchases(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const userId = 1;
+
+    const purchases = await getPurchasesByUserId(userId);
+
+    res.status(200).json(purchases);
+  } catch (error) {
+    console.error("구매 기록 목록 조회 실패:", error);
+
+    res.status(500).json({
+      message: "구매 기록 목록을 불러오지 못했습니다.",
+    });
+  }
+}
+
+export async function createPurchase(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const userId = 1;
     const body: unknown = req.body;
@@ -119,7 +143,10 @@ export async function createPurchase(req: Request, res: Response) {
   }
 }
 
-export async function getPurchaseDetail(req: Request, res: Response) {
+export async function getPurchaseDetail(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const userId = 1;
     const wishId = Number(req.params.wishId);
@@ -150,7 +177,10 @@ export async function getPurchaseDetail(req: Request, res: Response) {
   }
 }
 
-export async function updatePurchase(req: Request, res: Response) {
+export async function updatePurchase(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const userId = 1;
     const wishId = Number(req.params.wishId);
@@ -205,7 +235,10 @@ export async function updatePurchase(req: Request, res: Response) {
   }
 }
 
-export async function deletePurchase(req: Request, res: Response) {
+export async function deletePurchase(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const userId = 1;
     const wishId = Number(req.params.wishId);

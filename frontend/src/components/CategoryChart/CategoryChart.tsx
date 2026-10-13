@@ -1,4 +1,7 @@
-import { getMonthlyPurchases } from "../../utils/purchaseStorage";
+import { useEffect, useState } from "react";
+
+import { fetchPurchases } from "../../api/purchaseApi";
+import { fetchWishes } from "../../api/wishApi";
 
 import "./CategoryChart.css";
 
@@ -41,31 +44,76 @@ const categoryNames = [
 ];
 
 function CategoryChart({ selectedMonth }: CategoryChartProps) {
-  const purchases = getMonthlyPurchases(selectedMonth);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [totalSpending, setTotalSpending] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  const totalSpending = purchases.reduce(
-    (total, purchase) => total + purchase.amount,
-    0,
-  );
+  useEffect(() => {
+    let cancelled = false;
 
-  const categories: Category[] = categoryNames.map((category) => {
-    const amount = purchases
-      .filter(
-        (purchase) =>
-          purchase.category === category.name ||
-          purchase.category === category.code,
-      )
-      .reduce((total, purchase) => total + purchase.amount, 0);
+    async function loadCategorySpending() {
+      setIsLoading(true);
+      setLoadError("");
+      setCategories([]);
+      setTotalSpending(0);
 
-    const percentage = totalSpending > 0 ? (amount / totalSpending) * 100 : 0;
+      try {
+        const [purchases, wishes] = await Promise.all([
+          fetchPurchases(),
+          fetchWishes(),
+        ]);
 
-    return {
-      name: category.name,
-      amount,
-      percentage,
-      className: category.className,
+        if (cancelled) return;
+
+        const wishMap = new Map(wishes.map((wish) => [wish.wish_id, wish]));
+
+        const monthlyPurchases = purchases.filter((purchase) =>
+          purchase.purchased_at.startsWith(selectedMonth),
+        );
+
+        const total = monthlyPurchases.reduce(
+          (sum, purchase) => sum + Number(purchase.amount),
+          0,
+        );
+
+        const calculatedCategories = categoryNames.map((category) => {
+          const amount = monthlyPurchases
+            .filter((purchase) => {
+              const wish = wishMap.get(purchase.wish_id);
+
+              return wish?.category === category.code;
+            })
+            .reduce((sum, purchase) => sum + Number(purchase.amount), 0);
+
+          return {
+            name: category.name,
+            amount,
+            percentage: total > 0 ? (amount / total) * 100 : 0,
+            className: category.className,
+          };
+        });
+
+        setTotalSpending(total);
+        setCategories(calculatedCategories);
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error("카테고리별 소비 조회 실패:", error);
+        setLoadError("소비 통계를 불러오지 못했습니다.");
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadCategorySpending();
+
+    return () => {
+      cancelled = true;
     };
-  });
+  }, [selectedMonth]);
 
   let currentPercentage = 0;
 
@@ -93,22 +141,34 @@ function CategoryChart({ selectedMonth }: CategoryChartProps) {
             <span className="category-donut-label">총 소비</span>
 
             <strong className="category-donut-total">
-              {totalSpending.toLocaleString("ko-KR")}원
+              {isLoading
+                ? "불러오는 중..."
+                : loadError || `${totalSpending.toLocaleString("ko-KR")}원`}
             </strong>
           </div>
         </div>
 
         <div className="category-chart-legend">
-          {categories.map((category) => (
-            <div className="category-chart-legend-item" key={category.name}>
-              <div className="category-chart-label">
-                <span className={`category-chart-dot ${category.className}`} />
-                <span>{category.name}</span>
-              </div>
+          {categories.length > 0 ? (
+            categories.map((category) => (
+              <div className="category-chart-legend-item" key={category.name}>
+                <div className="category-chart-label">
+                  <span
+                    className={`category-chart-dot ${category.className}`}
+                  />
+                  <span>{category.name}</span>
+                </div>
 
-              <strong>{Math.round(category.percentage)}%</strong>
-            </div>
-          ))}
+                <strong>{Math.round(category.percentage)}%</strong>
+              </div>
+            ))
+          ) : (
+            <p>
+              {isLoading
+                ? "소비 통계를 불러오는 중..."
+                : loadError || "소비 내역이 없습니다."}
+            </p>
+          )}
         </div>
       </div>
     </section>

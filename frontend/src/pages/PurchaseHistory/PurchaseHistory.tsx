@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 
 import MonthSelector from "../../components/MonthSelector/MonthSelector";
 
-import { getMonthlyPurchases } from "../../utils/purchaseStorage";
+import { fetchPurchases } from "../../api/purchaseApi";
 import { fetchWishes } from "../../api/wishApi";
 import { fetchWishImages, getWishImageUrl } from "../../api/wishImageApi";
-
-import type { PurchaseRecord } from "../../types/purchase";
 
 import PurchaseItem from "./PurchaseItem/PurchaseItem";
 import PurchaseSummary from "./PurchaseSummary/PurchaseSummary";
@@ -22,12 +20,21 @@ function getCurrentMonth(): string {
   )}`;
 }
 
+interface PurchaseHistoryItem {
+  purchaseId: number;
+  wishId: number;
+  name: string;
+  category: string;
+  date: string;
+  amount: number;
+}
+
 function PurchaseHistory() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
 
-  const [filteredPurchases, setFilteredPurchases] = useState<PurchaseRecord[]>(
-    [],
-  );
+  const [filteredPurchases, setFilteredPurchases] = useState<
+    PurchaseHistoryItem[]
+  >([]);
 
   const [productImages, setProductImages] = useState<Record<number, string>>(
     {},
@@ -46,24 +53,41 @@ function PurchaseHistory() {
       setProductImages({});
 
       try {
-        const wishes = await fetchWishes();
+        const [purchases, wishes] = await Promise.all([
+          fetchPurchases(),
+          fetchWishes(),
+        ]);
 
         if (cancelled) return;
 
-        const boughtWishIds = new Set(
+        const wishMap = new Map(
           wishes
             .filter((wish) => wish.status === "BOUGHT")
-            .map((wish) => wish.wish_id),
+            .map((wish) => [wish.wish_id, wish]),
         );
 
-        const monthlyPurchases = getMonthlyPurchases(selectedMonth);
+        const monthlyPurchases = purchases
+          .filter((purchase) => purchase.purchased_at.startsWith(selectedMonth))
+          .filter((purchase) => wishMap.has(purchase.wish_id))
+          .map((purchase) => {
+            const wish = wishMap.get(purchase.wish_id)!;
 
-        const boughtPurchases = monthlyPurchases.filter((purchase) =>
-          boughtWishIds.has(purchase.wishId),
-        );
+            return {
+              purchaseId: purchase.purchase_id,
+              wishId: purchase.wish_id,
+              name: wish.name,
+              category: wish.category,
+              date: purchase.purchased_at,
+              amount: purchase.amount,
+            };
+          })
+          .sort(
+            (a, b) =>
+              b.date.localeCompare(a.date) || b.purchaseId - a.purchaseId,
+          );
 
         const imageEntries = await Promise.all(
-          boughtPurchases.map(async (item) => {
+          monthlyPurchases.map(async (item) => {
             try {
               const images = await fetchWishImages(item.wishId);
 
@@ -92,7 +116,7 @@ function PurchaseHistory() {
 
         if (cancelled) return;
 
-        setFilteredPurchases(boughtPurchases);
+        setFilteredPurchases(monthlyPurchases);
         setProductImages(Object.fromEntries(imageEntries));
       } catch (error) {
         if (cancelled) return;
@@ -159,7 +183,7 @@ function PurchaseHistory() {
             ) : filteredPurchases.length > 0 ? (
               filteredPurchases.map((item) => (
                 <PurchaseItem
-                  key={item.wishId}
+                  key={item.purchaseId}
                   wishId={item.wishId}
                   name={item.name}
                   category={item.category}

@@ -24,6 +24,16 @@ export interface UpdatePurchaseRequest {
 
 const API_BASE_URL = "http://localhost:3000/api/purchases";
 
+export async function fetchPurchases(): Promise<PurchaseResponse[]> {
+  const response = await fetch(API_BASE_URL);
+
+  if (!response.ok) {
+    throw new Error("구매 기록 목록 조회에 실패했습니다.");
+  }
+
+  return (await response.json()) as PurchaseResponse[];
+}
+
 export async function createPurchase(
   data: CreatePurchaseRequest,
 ): Promise<PurchaseResponse> {
