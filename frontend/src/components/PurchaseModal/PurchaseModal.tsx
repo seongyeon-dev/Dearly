@@ -13,14 +13,27 @@ type PurchaseModalProps = {
   isOpen: boolean;
   productName: string;
   productPrice: number;
+  mode?: "create" | "edit";
+  initialData?: PurchaseData | null;
   onClose: () => void;
-  onSave: (data: PurchaseData) => void;
+  onSave: (data: PurchaseData) => void | Promise<void>;
 };
+
+function getTodayDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 function PurchaseModal({
   isOpen,
   productName,
   productPrice,
+  mode = "create",
+  initialData = null,
   onClose,
   onSave,
 }: PurchaseModalProps) {
@@ -29,19 +42,29 @@ function PurchaseModal({
   const [store, setStore] = useState("");
   const [memo, setMemo] = useState("");
   const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    setAmount(String(productPrice));
-    setDate(new Date().toLocaleDateString("en-CA"));
-    setStore("");
-    setMemo("");
+    if (mode === "edit" && initialData) {
+      setAmount(String(initialData.amount));
+      setDate(initialData.date);
+      setStore(initialData.store);
+      setMemo(initialData.memo);
+    } else {
+      setAmount(String(productPrice));
+      setDate(getTodayDate());
+      setStore("");
+      setMemo("");
+    }
+
     setError("");
-  }, [isOpen, productPrice]);
+    setIsSaving(false);
+  }, [isOpen, mode, initialData, productPrice]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isSaving) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -54,11 +77,20 @@ function PurchaseModal({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, isSaving, onClose]);
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
+  const isEditMode = mode === "edit";
+
+  const handleClose = () => {
+    if (isSaving) return;
+    onClose();
+  };
+
+  const handleSave = async () => {
+    if (isSaving) return;
+
     const purchaseAmount = Number(amount);
 
     if (
@@ -75,14 +107,27 @@ function PurchaseModal({
       return;
     }
 
-    setError("");
+    if (store.trim().length > 150) {
+      setError("구매처는 150자 이내로 입력해 주세요.");
+      return;
+    }
 
-    onSave({
-      amount: purchaseAmount,
-      date,
-      store: store.trim(),
-      memo: memo.trim(),
-    });
+    setError("");
+    setIsSaving(true);
+
+    try {
+      await onSave({
+        amount: purchaseAmount,
+        date,
+        store: store.trim(),
+        memo: memo.trim(),
+      });
+    } catch (error) {
+      console.error("구매 기록 저장 실패:", error);
+      setError("구매 기록을 저장하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -90,7 +135,7 @@ function PurchaseModal({
       className="purchase-modal-overlay"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
-          onClose();
+          handleClose();
         }
       }}
     >
@@ -102,14 +147,22 @@ function PurchaseModal({
       >
         <div className="purchase-modal-header">
           <div>
-            <h2 id="purchase-modal-title">구매 기록 추가</h2>
-            <p>구매한 상품의 정보를 기록해 보세요.</p>
+            <h2 id="purchase-modal-title">
+              {isEditMode ? "구매 기록 수정" : "구매 기록 추가"}
+            </h2>
+
+            <p>
+              {isEditMode
+                ? "구매한 상품의 정보를 수정해 보세요."
+                : "구매한 상품의 정보를 기록해 보세요."}
+            </p>
           </div>
 
           <button
             type="button"
             className="purchase-modal-close"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={isSaving}
             aria-label="닫기"
           >
             <X size={20} />
@@ -135,6 +188,7 @@ function PurchaseModal({
                 min="0"
                 step="1"
                 value={amount}
+                disabled={isSaving}
                 onChange={(event) => {
                   setAmount(event.target.value);
                   setError("");
@@ -155,6 +209,7 @@ function PurchaseModal({
                 id="purchase-date"
                 type="date"
                 value={date}
+                disabled={isSaving}
                 onChange={(event) => {
                   setDate(event.target.value);
                   setError("");
@@ -173,7 +228,11 @@ function PurchaseModal({
               id="purchase-store"
               type="text"
               value={store}
-              onChange={(event) => setStore(event.target.value)}
+              disabled={isSaving}
+              onChange={(event) => {
+                setStore(event.target.value);
+                setError("");
+              }}
               placeholder="예: 올리브영 온라인몰"
               maxLength={100}
             />
@@ -187,6 +246,7 @@ function PurchaseModal({
             <textarea
               id="purchase-memo"
               value={memo}
+              disabled={isSaving}
               onChange={(event) => setMemo(event.target.value)}
               placeholder="구매할 때의 생각을 간단히 기록해 보세요."
               maxLength={300}
@@ -207,7 +267,8 @@ function PurchaseModal({
           <button
             type="button"
             className="purchase-modal-cancel"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={isSaving}
           >
             취소
           </button>
@@ -215,9 +276,10 @@ function PurchaseModal({
           <button
             type="button"
             className="purchase-modal-save"
-            onClick={handleSave}
+            onClick={() => void handleSave()}
+            disabled={isSaving}
           >
-            저장하기
+            {isSaving ? "저장 중..." : isEditMode ? "수정하기" : "저장하기"}
           </button>
         </div>
       </div>

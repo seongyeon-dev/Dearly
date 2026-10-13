@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
 import { fetchWishes } from "../../api/wishApi";
+import { fetchPurchaseByWishId } from "../../api/purchaseApi";
 import type { Wish, WishCategory } from "../../types/wish";
 
 import "./Wishlist.css";
@@ -86,26 +87,51 @@ function Wishlist() {
     let cancelled = false;
 
     async function loadWishes() {
-      try {
-        setLoading(true);
-        setError("");
+      setLoading(true);
+      setError("");
 
+      try {
         const data = await fetchWishes();
 
-        if (cancelled) return;
+        const convertedItems: WishlistItem[] = await Promise.all(
+          data.map(async (item) => {
+            let displayPrice = Number(item.expected_price);
 
-        const convertedItems: WishlistItem[] = data.map((item) => ({
-          id: item.wish_id,
-          name: item.name,
-          category: item.category,
-          price: `${Number(item.expected_price).toLocaleString("ko-KR")}원`,
-          ...statusMap[item.status],
-          isFavorite: Boolean(item.is_favorite),
-        }));
+            if (item.status === "BOUGHT") {
+              try {
+                const purchase = await fetchPurchaseByWishId(item.wish_id);
+
+                if (purchase) {
+                  displayPrice = Number(purchase.amount);
+                }
+              } catch (purchaseError) {
+                console.error(
+                  `${item.wish_id}번 상품 구매 기록 조회 실패:`,
+                  purchaseError,
+                );
+              }
+            }
+
+            return {
+              id: item.wish_id,
+              name: item.name,
+              category: item.category,
+              price: `${displayPrice.toLocaleString("ko-KR")}원`,
+              ...statusMap[item.status],
+              isFavorite: Boolean(item.is_favorite),
+            };
+          }),
+        );
+
+        if (cancelled) {
+          return;
+        }
 
         setItems(convertedItems);
       } catch (err) {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         setError(
           err instanceof Error

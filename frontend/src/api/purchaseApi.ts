@@ -1,0 +1,88 @@
+export interface PurchaseResponse {
+  purchase_id: number;
+  wish_id: number;
+  amount: number;
+  purchased_at: string;
+  store: string | null;
+  memo: string | null;
+}
+
+export interface CreatePurchaseRequest {
+  wish_id: number;
+  amount: number;
+  purchased_at: string;
+  store: string | null;
+  memo: string | null;
+}
+
+export interface UpdatePurchaseRequest {
+  amount: number;
+  purchased_at: string;
+  store: string | null;
+  memo: string | null;
+}
+
+const API_BASE_URL = "http://localhost:3000/api/purchases";
+
+export async function createPurchase(
+  data: CreatePurchaseRequest,
+): Promise<PurchaseResponse> {
+  const response = await fetch(API_BASE_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error("구매 기록 등록에 실패했습니다.");
+  }
+
+  return (await response.json()) as PurchaseResponse;
+}
+
+export async function fetchPurchaseByWishId(
+  wishId: number,
+): Promise<PurchaseResponse | null> {
+  const response = await fetch(`${API_BASE_URL}/wish/${wishId}`);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("구매 기록 조회에 실패했습니다.");
+  }
+
+  return (await response.json()) as PurchaseResponse;
+}
+
+export async function updatePurchase(
+  wishId: number,
+  data: UpdatePurchaseRequest,
+): Promise<PurchaseResponse> {
+  const response = await fetch(`${API_BASE_URL}/wish/${wishId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error("구매 기록 수정에 실패했습니다.");
+  }
+
+  return (await response.json()) as PurchaseResponse;
+}
+
+export async function deletePurchase(wishId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/wish/${wishId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("구매 기록 삭제에 실패했습니다.");
+  }
+}
