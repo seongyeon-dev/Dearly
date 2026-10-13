@@ -1,12 +1,16 @@
 import pool from "../config/db";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 
+type WishCategory = "BEAUTY" | "FASHION" | "LIFESTYLE" | "OTHER";
+
+type WishStatus = "WANT" | "CONSIDERING" | "BOUGHT";
+
 interface WishRow extends RowDataPacket {
   wish_id: number;
   user_id: number;
   name: string;
-  category: string;
-  status: string;
+  category: WishCategory;
+  status: WishStatus;
   expected_price: number;
   is_favorite: number;
   planned_date: string | null;
@@ -16,8 +20,8 @@ interface WishRow extends RowDataPacket {
 
 export interface CreateWishInput {
   name: string;
-  category: "BEAUTY" | "FASHION" | "LIFESTYLE" | "OTHER";
-  status: "WANT" | "CONSIDERING" | "BOUGHT";
+  category: WishCategory;
+  status: WishStatus;
   expected_price: number;
   planned_date: string | null;
   purchase_link: string | null;
@@ -25,11 +29,13 @@ export interface CreateWishInput {
 }
 
 export interface UpdateWishInput {
+  name?: string;
+  category?: WishCategory;
   expected_price?: number;
   planned_date?: string | null;
   purchase_link?: string | null;
   memo?: string | null;
-  status?: "WANT" | "CONSIDERING" | "BOUGHT";
+  status?: WishStatus;
 }
 
 export async function getWishes(userId: number): Promise<WishRow[]> {
@@ -96,6 +102,16 @@ export async function updateWishInDb(
 ): Promise<WishRow | null> {
   const fields: string[] = [];
   const values: (string | number | null)[] = [];
+
+  if (data.name !== undefined) {
+    fields.push("name = ?");
+    values.push(data.name);
+  }
+
+  if (data.category !== undefined) {
+    fields.push("category = ?");
+    values.push(data.category);
+  }
 
   if (data.expected_price !== undefined) {
     fields.push("expected_price = ?");
