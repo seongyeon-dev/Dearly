@@ -41,12 +41,16 @@ function isValidPurchaseInput(body: unknown): body is UpdatePurchaseInput {
   );
 }
 
-export async function getPurchases(
-  _req: Request,
-  res: Response,
-): Promise<void> {
+export async function getPurchases(req: Request, res: Response): Promise<void> {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
 
     const purchases = await getPurchasesByUserId(userId);
 
@@ -65,7 +69,15 @@ export async function createPurchase(
   res: Response,
 ): Promise<void> {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const body: unknown = req.body;
 
     if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -148,7 +160,15 @@ export async function getPurchaseDetail(
   res: Response,
 ): Promise<void> {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = Number(req.params.wishId);
 
     if (!Number.isSafeInteger(wishId) || wishId <= 0) {
@@ -182,7 +202,15 @@ export async function updatePurchase(
   res: Response,
 ): Promise<void> {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = Number(req.params.wishId);
     const body: unknown = req.body;
 
@@ -240,7 +268,15 @@ export async function deletePurchase(
   res: Response,
 ): Promise<void> {
   try {
-    const userId = 1;
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = Number(req.params.wishId);
 
     if (!Number.isSafeInteger(wishId) || wishId <= 0) {
