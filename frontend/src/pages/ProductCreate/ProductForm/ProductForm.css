@@ -1,4 +1,5 @@
 .product-form {
+  width: 100%;
   min-width: 0;
 }
 
@@ -24,6 +25,7 @@
 .form-field select,
 .form-field textarea {
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   color: var(--color-text);
   background-color: var(--color-surface);
@@ -43,6 +45,11 @@
 
 .form-field select {
   cursor: pointer;
+}
+
+.form-field textarea {
+  padding: 13px 14px;
+  resize: vertical;
 }
 
 .form-field input::placeholder,
@@ -77,6 +84,7 @@
   color: var(--color-text-sub);
   font-size: 11px;
   transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .date-input {
@@ -103,6 +111,7 @@
   bottom: 10px;
   color: var(--color-text-muted);
   font-size: 10px;
+  pointer-events: none;
 }
 
 .form-buttons {
@@ -117,9 +126,13 @@
   height: 44px;
   padding: 0 30px;
   border-radius: var(--radius-medium);
+  font-family: inherit;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .cancel-button {
@@ -140,6 +153,12 @@
 
 .submit-button:hover {
   background-color: var(--color-primary-hover);
+}
+
+.cancel-button:disabled,
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
