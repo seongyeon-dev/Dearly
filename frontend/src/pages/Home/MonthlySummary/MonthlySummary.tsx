@@ -1,10 +1,9 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShoppingBag, CreditCard, CircleDollarSign } from "lucide-react";
 
 import BudgetModal from "../BudgetModal/BudgetModal";
-import { getMonthlyTotal } from "../../../utils/purchaseStorage";
+import { fetchPurchases } from "../../../api/purchaseApi";
 
 import "./MonthlySummary.css";
 
@@ -48,6 +47,9 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
 
   const [budgets, setBudgets] = useState<Record<string, number>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [spentAmount, setSpentAmount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const month = selectedMonth || getCurrentMonth();
 
@@ -66,18 +68,50 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
 
   const budget = budgets[month] ?? getSavedBudget(month);
 
-  const spentAmount = getMonthlyTotal(month);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMonthlySpending() {
+      setIsLoading(true);
+      setLoadError("");
+      setSpentAmount(0);
+
+      try {
+        const purchases = await fetchPurchases();
+
+        if (cancelled) return;
+
+        const monthlyTotal = purchases
+          .filter((purchase) => purchase.purchased_at.startsWith(month))
+          .reduce((total, purchase) => total + Number(purchase.amount), 0);
+
+        setSpentAmount(monthlyTotal);
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error("월별 소비 금액 조회 실패:", error);
+        setLoadError("소비 금액을 불러오지 못했습니다.");
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadMonthlySpending();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [month]);
 
   const remainingBudget = budget - spentAmount;
 
-  const usedPercent =
-    budget > 0 ? Math.round((spentAmount / budget) * 100) : 0;
+  const usedPercent = budget > 0 ? Math.round((spentAmount / budget) * 100) : 0;
 
-  const remainingPercent =
-    budget > 0 ? Math.max(0, 100 - usedPercent) : 0;
+  const remainingPercent = budget > 0 ? Math.max(0, 100 - usedPercent) : 0;
 
-  const formatPrice = (price: number) =>
-    `${price.toLocaleString("ko-KR")}원`;
+  const formatPrice = (price: number) => `${price.toLocaleString("ko-KR")}원`;
 
   const handleSaveBudget = (newBudget: number) => {
     try {
@@ -145,8 +179,12 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
 
             <div className="stat-text">
               <span>사용 금액</span>
-              <strong>{formatPrice(spentAmount)}</strong>
-              <small>{usedPercent}% 사용</small>
+              <strong>
+                {isLoading
+                  ? "불러오는 중..."
+                  : loadError || formatPrice(spentAmount)}
+              </strong>
+              {!isLoading && !loadError && <small>{usedPercent}% 사용</small>}
             </div>
           </div>
 
@@ -157,12 +195,18 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
 
             <div className="stat-text">
               <span>남은 예산</span>
-              <strong>{formatPrice(remainingBudget)}</strong>
-              <small>
-                {remainingBudget < 0
-                  ? "예산 초과"
-                  : `${remainingPercent}% 남음`}
-              </small>
+              <strong>
+                {isLoading
+                  ? "불러오는 중..."
+                  : loadError || formatPrice(remainingBudget)}
+              </strong>
+              {!isLoading && !loadError && (
+                <small>
+                  {remainingBudget < 0
+                    ? "예산 초과"
+                    : `${remainingPercent}% 남음`}
+                </small>
+              )}
             </div>
           </div>
         </div>
@@ -173,16 +217,22 @@ function MonthlySummary({ selectedMonth }: MonthlySummaryProps) {
               <div
                 className="progress-value"
                 style={{
-                  width: `${Math.min(100, usedPercent)}%`,
+                  width:
+                    isLoading || loadError
+                      ? "0%"
+                      : `${Math.min(100, Math.max(0, usedPercent))}%`,
                 }}
               />
             </div>
 
-            <strong>{usedPercent}%</strong>
+            <strong>{isLoading || loadError ? "-" : `${usedPercent}%`}</strong>
           </div>
 
           <p>
-            {formatPrice(spentAmount)} / {formatPrice(budget)}
+            {isLoading
+              ? "소비 금액을 불러오는 중..."
+              : loadError ||
+                `${formatPrice(spentAmount)} / ${formatPrice(budget)}`}
           </p>
         </div>
       </div>
