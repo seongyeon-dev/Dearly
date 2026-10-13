@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
+import { fetchWishes } from "../../api/wishApi";
 import type { Wish, WishCategory } from "../../types/wish";
-import { getFavoriteIds } from "../../utils/favoriteStorage";
-import { getWishlistProducts } from "../../utils/wishlistStorage";
 
 import "./Wishlist.css";
 
@@ -17,9 +16,7 @@ const categoryNames: Record<WishCategory, string> = {
 };
 
 type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
-
 type SortType = "latest" | "oldest" | "price-low" | "price-high";
-
 type FilterType = "all" | "favorite";
 
 const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
@@ -37,73 +34,18 @@ const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
   },
 };
 
-function isProductStatus(value: unknown): value is ProductStatus {
-  return value === "WANT" || value === "CONSIDERING" || value === "BOUGHT";
-}
-
-function getDeletedProductIds(): number[] {
-  try {
-    const saved = localStorage.getItem("dearly-deleted-products");
-
-    if (!saved) {
-      return [];
-    }
-
-    const parsed: unknown = JSON.parse(saved);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(
-      (id): id is number => typeof id === "number" && Number.isInteger(id),
-    );
-  } catch {
-    return [];
-  }
-}
-
-function getWishlistItems(): Wish[] {
-  const deletedIds = getDeletedProductIds();
-
-  return getWishlistProducts()
-    .filter((item) => !deletedIds.includes(item.id))
-    .map((item): Wish => {
-      const storageKey = `dearly-product-detail-${item.id}`;
-
-      try {
-        const saved = localStorage.getItem(storageKey);
-
-        if (!saved) {
-          return item;
-        }
-
-        const product: unknown = JSON.parse(saved);
-
-        if (
-          typeof product !== "object" ||
-          product === null ||
-          !("status" in product) ||
-          !isProductStatus(product.status)
-        ) {
-          return item;
-        }
-
-        return {
-          ...item,
-          ...statusMap[product.status],
-        };
-      } catch {
-        return item;
-      }
-    });
-}
+type WishlistItem = Wish & {
+  isFavorite: boolean;
+};
 
 function getNumericPrice(price: string): number {
   return Number(price.replace(/[^\d]/g, ""));
 }
 
-function sortWishlistItems(items: Wish[], sortType: SortType): Wish[] {
+function sortWishlistItems(
+  items: WishlistItem[],
+  sortType: SortType,
+): WishlistItem[] {
   const sortedItems = [...items];
 
   switch (sortType) {
@@ -136,23 +78,53 @@ function Wishlist() {
   const [sortType, setSortType] = useState<SortType>("latest");
   const [filterType, setFilterType] = useState<FilterType>("all");
 
-  const [favoriteIds, setFavoriteIds] = useState<number[]>(getFavoriteIds);
+  const [items, setItems] = useState<WishlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const updateFavorites = () => {
-      setFavoriteIds(getFavoriteIds());
-    };
+    let cancelled = false;
 
-    window.addEventListener("dearly-favorites-updated", updateFavorites);
-    window.addEventListener("storage", updateFavorites);
+    async function loadWishes() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await fetchWishes();
+
+        if (cancelled) return;
+
+        const convertedItems: WishlistItem[] = data.map((item) => ({
+          id: item.wish_id,
+          name: item.name,
+          category: item.category,
+          price: `${Number(item.expected_price).toLocaleString("ko-KR")}원`,
+          ...statusMap[item.status],
+          isFavorite: Boolean(item.is_favorite),
+        }));
+
+        setItems(convertedItems);
+      } catch (err) {
+        if (cancelled) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "상품을 불러오는 중 오류가 발생했습니다.",
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadWishes();
 
     return () => {
-      window.removeEventListener("dearly-favorites-updated", updateFavorites);
-      window.removeEventListener("storage", updateFavorites);
+      cancelled = true;
     };
   }, []);
-
-  const items = getWishlistItems();
 
   const categoryParam = searchParams.get("category");
 
@@ -166,7 +138,7 @@ function Wishlist() {
       return false;
     }
 
-    if (filterType === "favorite" && !favoriteIds.includes(item.id)) {
+    if (filterType === "favorite" && !item.isFavorite) {
       return false;
     }
 
@@ -254,7 +226,13 @@ function Wishlist() {
         <section
           className={`wishlist-items ${viewType === "list" ? "list-view" : ""}`}
         >
-          {sortedItems.length > 0 ? (
+          {loading ? (
+            <p className="wishlist-empty-message">
+              상품을 불러오는 중입니다...
+            </p>
+          ) : error ? (
+            <p className="wishlist-empty-message">{error}</p>
+          ) : sortedItems.length > 0 ? (
             sortedItems.map((item) => (
               <div
                 key={item.id}
