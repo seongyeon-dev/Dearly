@@ -27,7 +27,9 @@ export interface DeleteWishImageResponse {
 export async function fetchWishImages(
   wishId: number,
 ): Promise<WishImageResponse[]> {
-  const response = await fetch(`${API_BASE_URL}/${wishId}/images`);
+  const response = await fetch(`${API_BASE_URL}/${wishId}/images`, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
     throw new Error("상품 이미지 조회에 실패했습니다.");
@@ -50,6 +52,7 @@ export async function uploadWishImage(
 
   const response = await fetch(`${API_BASE_URL}/${wishId}/images`, {
     method: "POST",
+    credentials: "include",
     body: formData,
   });
 
@@ -66,6 +69,7 @@ export async function deleteWishImage(
 ): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/${wishId}/images/${imageId}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
