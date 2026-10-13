@@ -1,11 +1,17 @@
 import { Camera } from "lucide-react";
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import axios from "axios";
 
 import "./ProfileImage.css";
 
 const DB_NAME = "dearly-images";
 const STORE_NAME = "profiles";
-const PROFILE_IMAGE_KEY = "my-profile";
+
+interface CurrentUser {
+  user_id: number;
+  email: string;
+  nickname: string;
+}
 
 function openImageDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -33,17 +39,18 @@ function openImageDatabase(): Promise<IDBDatabase> {
   });
 }
 
-async function getSavedProfileImage(): Promise<Blob | null> {
+async function getSavedProfileImage(userId: number): Promise<Blob | null> {
   const database = await openImageDatabase();
 
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, "readonly");
 
-    const request = transaction.objectStore(STORE_NAME).get(PROFILE_IMAGE_KEY);
+    const request = transaction
+      .objectStore(STORE_NAME)
+      .get(`my-profile-${userId}`);
 
     request.onsuccess = () => {
       const result: unknown = request.result;
-
       resolve(result instanceof Blob ? result : null);
     };
 
@@ -58,16 +65,20 @@ async function getSavedProfileImage(): Promise<Blob | null> {
     transaction.onerror = () => {
       database.close();
     };
+
+    transaction.onabort = () => {
+      database.close();
+    };
   });
 }
 
-async function saveProfileImage(file: File): Promise<void> {
+async function saveProfileImage(userId: number, file: File): Promise<void> {
   const database = await openImageDatabase();
 
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, "readwrite");
 
-    transaction.objectStore(STORE_NAME).put(file, PROFILE_IMAGE_KEY);
+    transaction.objectStore(STORE_NAME).put(file, `my-profile-${userId}`);
 
     transaction.oncomplete = () => {
       database.close();
@@ -87,36 +98,62 @@ async function saveProfileImage(file: File): Promise<void> {
 }
 
 function ProfileImage() {
+  const [userId, setUserId] = useState<number | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const imageUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    let imageUrl: string | null = null;
 
-    const loadImage = async () => {
+    const loadUserAndImage = async () => {
       try {
-        const savedImage = await getSavedProfileImage();
+        const response = await axios.get<{ user: CurrentUser }>(
+          "http://localhost:3000/api/auth/me",
+          {
+            withCredentials: true,
+          },
+        );
 
-        if (!active || !savedImage) {
+        if (!active) {
           return;
         }
 
-        imageUrl = URL.createObjectURL(savedImage);
-        setProfileImage(imageUrl);
+        const currentUserId = response.data.user.user_id;
+
+        setUserId(currentUserId);
+
+        const savedImage = await getSavedProfileImage(currentUserId);
+
+        if (!active) {
+          return;
+        }
+
+        if (savedImage) {
+          const imageUrl = URL.createObjectURL(savedImage);
+
+          imageUrlRef.current = imageUrl;
+          setProfileImage(imageUrl);
+        }
       } catch (error) {
         console.error("프로필 이미지 불러오기 실패:", error);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
       }
     };
 
-    void loadImage();
+    void loadUserAndImage();
 
     return () => {
       active = false;
 
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+        imageUrlRef.current = null;
       }
     };
   }, []);
@@ -124,7 +161,7 @@ function ProfileImage() {
   const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
-    if (!file || isSaving) {
+    if (!file || isSaving || userId === null) {
       return;
     }
 
@@ -143,17 +180,16 @@ function ProfileImage() {
     setIsSaving(true);
 
     try {
-      await saveProfileImage(file);
+      await saveProfileImage(userId, file);
 
       const imageUrl = URL.createObjectURL(file);
 
-      setProfileImage((previousImage) => {
-        if (previousImage) {
-          URL.revokeObjectURL(previousImage);
-        }
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+      }
 
-        return imageUrl;
-      });
+      imageUrlRef.current = imageUrl;
+      setProfileImage(imageUrl);
 
       window.dispatchEvent(new Event("dearly-profile-image-updated"));
     } catch (error) {
@@ -187,7 +223,7 @@ function ProfileImage() {
             accept="image/*"
             className="profile-edit-image-input"
             onChange={handleImageChange}
-            disabled={isSaving}
+            disabled={isSaving || isLoading || userId === null}
           />
         </label>
       </div>
