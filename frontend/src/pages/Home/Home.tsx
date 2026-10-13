@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import CategoryChart from "../../components/CategoryChart/CategoryChart";
 import MonthSelector from "../../components/MonthSelector/MonthSelector";
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
-import type { Wish } from "../../types/wish";
-import { getWishlistProducts } from "../../utils/wishlistStorage";
+import { fetchWishes } from "../../api/wishApi";
+import { fetchPurchaseByWishId } from "../../api/purchaseApi";
+import type { Wish, WishCategory } from "../../types/wish";
 import MonthlySummary from "./MonthlySummary/MonthlySummary";
 
 import "./Home.css";
@@ -27,67 +28,7 @@ const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
   },
 };
 
-function isProductStatus(value: unknown): value is ProductStatus {
-  return value === "WANT" || value === "CONSIDERING" || value === "BOUGHT";
-}
-
-function getDeletedProductIds(): number[] {
-  try {
-    const saved = localStorage.getItem("dearly-deleted-products");
-
-    if (!saved) {
-      return [];
-    }
-
-    const parsed: unknown = JSON.parse(saved);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(
-      (id): id is number => typeof id === "number" && Number.isInteger(id),
-    );
-  } catch {
-    return [];
-  }
-}
-
-function getRecentWishlistItems(): Wish[] {
-  const deletedIds = getDeletedProductIds();
-
-  return getWishlistProducts()
-    .filter((item) => !deletedIds.includes(item.id))
-    .map((item): Wish => {
-      try {
-        const saved = localStorage.getItem(`dearly-product-detail-${item.id}`);
-
-        if (!saved) {
-          return item;
-        }
-
-        const parsed: unknown = JSON.parse(saved);
-
-        if (
-          typeof parsed !== "object" ||
-          parsed === null ||
-          !("status" in parsed) ||
-          !isProductStatus(parsed.status)
-        ) {
-          return item;
-        }
-
-        return {
-          ...item,
-          ...statusMap[parsed.status],
-        };
-      } catch {
-        return item;
-      }
-    })
-    .sort((a, b) => b.id - a.id)
-    .slice(0, 4);
-}
+type RecentWishlistItem = Wish;
 
 function getCurrentMonth(): string {
   const today = new Date();
@@ -102,8 +43,77 @@ function Home() {
   const navigate = useNavigate();
 
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
+  const [recentWishlistItems, setRecentWishlistItems] = useState<
+    RecentWishlistItem[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  const recentWishlistItems = getRecentWishlistItems();
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRecentWishes() {
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const wishes = await fetchWishes();
+
+        const recentWishes = [...wishes]
+          .sort((a, b) => b.wish_id - a.wish_id)
+          .slice(0, 4);
+
+        const convertedItems: RecentWishlistItem[] = await Promise.all(
+          recentWishes.map(async (item) => {
+            let displayPrice = Number(item.expected_price);
+
+            if (item.status === "BOUGHT") {
+              try {
+                const purchase = await fetchPurchaseByWishId(item.wish_id);
+
+                if (purchase) {
+                  displayPrice = Number(purchase.amount);
+                }
+              } catch (error) {
+                console.error(
+                  `${item.wish_id}번 상품 구매 기록 조회 실패:`,
+                  error,
+                );
+              }
+            }
+
+            return {
+              id: item.wish_id,
+              name: item.name,
+              category: item.category as WishCategory,
+              price: `${displayPrice.toLocaleString("ko-KR")}원`,
+              ...statusMap[item.status],
+            };
+          }),
+        );
+
+        if (cancelled) return;
+
+        setRecentWishlistItems(convertedItems);
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error("최근 위시 상품 조회 실패:", error);
+
+        setLoadError("최근 위시 상품을 불러오지 못했습니다.");
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadRecentWishes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <main className="home">
@@ -137,7 +147,11 @@ function Home() {
           </div>
 
           <div className="wishlist-grid">
-            {recentWishlistItems.length > 0 ? (
+            {isLoading ? (
+              <p>상품을 불러오는 중입니다...</p>
+            ) : loadError ? (
+              <p>{loadError}</p>
+            ) : recentWishlistItems.length > 0 ? (
               recentWishlistItems.map((item) => (
                 <div
                   key={item.id}
