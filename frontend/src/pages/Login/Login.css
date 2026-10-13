@@ -167,6 +167,11 @@
   transform: rotate(45deg);
 }
 
+.login-keep input:focus-visible + .login-checkbox {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
 .login-find-password {
   padding: 0;
   color: var(--color-primary);
@@ -181,6 +186,13 @@
   color: var(--color-primary-hover);
 }
 
+.login-error {
+  margin: -8px 0 16px;
+  color: #d94b63;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .login-submit-button {
   width: 100%;
   height: 54px;
@@ -192,11 +204,18 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease;
 }
 
-.login-submit-button:hover {
+.login-submit-button:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
+}
+
+.login-submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .login-divider {
