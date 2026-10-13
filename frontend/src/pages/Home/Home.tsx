@@ -6,6 +6,7 @@ import MonthSelector from "../../components/MonthSelector/MonthSelector";
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
 import { fetchWishes } from "../../api/wishApi";
 import { fetchPurchaseByWishId } from "../../api/purchaseApi";
+import { fetchWishImages, getWishImageUrl } from "../../api/wishImageApi";
 import type { Wish, WishCategory } from "../../types/wish";
 import MonthlySummary from "./MonthlySummary/MonthlySummary";
 
@@ -28,7 +29,9 @@ const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
   },
 };
 
-type RecentWishlistItem = Wish;
+type RecentWishlistItem = Wish & {
+  imageUrl: string | null;
+};
 
 function getCurrentMonth(): string {
   const today = new Date();
@@ -66,6 +69,7 @@ function Home() {
         const convertedItems: RecentWishlistItem[] = await Promise.all(
           recentWishes.map(async (item) => {
             let displayPrice = Number(item.expected_price);
+            let imageUrl: string | null = null;
 
             if (item.status === "BOUGHT") {
               try {
@@ -82,11 +86,26 @@ function Home() {
               }
             }
 
+            try {
+              const images = await fetchWishImages(item.wish_id);
+
+              if (images.length > 0) {
+                const sortedImages = [...images].sort(
+                  (a, b) => a.sort_order - b.sort_order,
+                );
+
+                imageUrl = getWishImageUrl(sortedImages[0].image_url);
+              }
+            } catch (error) {
+              console.error(`${item.wish_id}번 상품 이미지 조회 실패:`, error);
+            }
+
             return {
               id: item.wish_id,
               name: item.name,
               category: item.category as WishCategory,
               price: `${displayPrice.toLocaleString("ko-KR")}원`,
+              imageUrl,
               ...statusMap[item.status],
             };
           }),
@@ -164,6 +183,7 @@ function Home() {
                     price={item.price}
                     status={item.status}
                     statusClass={item.statusClass}
+                    imageUrl={item.imageUrl}
                   />
                 </div>
               ))

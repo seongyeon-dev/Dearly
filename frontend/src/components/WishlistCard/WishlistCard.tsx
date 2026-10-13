@@ -3,77 +3,24 @@ import { Heart } from "lucide-react";
 
 import type { WishStatus, WishStatusClass } from "../../types/wish";
 import { isFavorite, toggleFavorite } from "../../utils/favoriteStorage";
+import { fetchWishImages, getWishImageUrl } from "../../api/wishImageApi";
 
 import "./WishlistCard.css";
 
 type WishlistCardProps = {
   productId?: number;
   image?: string;
+  imageUrl?: string | null;
   name: string;
   price: string;
   status: WishStatus;
   statusClass: WishStatusClass;
 };
 
-function loadProductImage(productId: number): Promise<File | null> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("dearly-images", 2);
-
-    request.onupgradeneeded = () => {
-      const database = request.result;
-
-      if (!database.objectStoreNames.contains("products")) {
-        database.createObjectStore("products");
-      }
-
-      if (!database.objectStoreNames.contains("profiles")) {
-        database.createObjectStore("profiles");
-      }
-    };
-
-    request.onerror = () => {
-      reject(new Error("이미지 데이터베이스를 열 수 없습니다."));
-    };
-
-    request.onsuccess = () => {
-      const database = request.result;
-      const transaction = database.transaction("products", "readonly");
-      const store = transaction.objectStore("products");
-      const getRequest = store.get(productId);
-
-      getRequest.onsuccess = () => {
-        const result: unknown = getRequest.result;
-
-        if (
-          Array.isArray(result) &&
-          result.length > 0 &&
-          result[0] instanceof File
-        ) {
-          resolve(result[0]);
-        } else {
-          resolve(null);
-        }
-      };
-
-      getRequest.onerror = () => {
-        reject(new Error("상품 이미지를 읽을 수 없습니다."));
-      };
-
-      transaction.oncomplete = () => {
-        database.close();
-      };
-
-      transaction.onerror = () => {
-        database.close();
-        reject(new Error("이미지 조회에 실패했습니다."));
-      };
-    };
-  });
-}
-
 function WishlistCard({
   productId,
   image,
+  imageUrl,
   name,
   price,
   status,
@@ -86,25 +33,43 @@ function WishlistCard({
   );
 
   useEffect(() => {
+    if (imageUrl) {
+      setUploadedImage(null);
+      return;
+    }
+
     if (productId === undefined) {
+      setUploadedImage(null);
       return;
     }
 
     let cancelled = false;
-    let imageUrl: string | null = null;
+
+    setUploadedImage(null);
 
     const loadImage = async () => {
       try {
-        const file = await loadProductImage(productId);
+        const images = await fetchWishImages(productId);
 
-        if (cancelled || !file) {
+        if (cancelled) return;
+
+        if (images.length === 0) {
+          setUploadedImage(null);
           return;
         }
 
-        imageUrl = URL.createObjectURL(file);
-        setUploadedImage(imageUrl);
+        const sortedImages = [...images].sort(
+          (a, b) => a.sort_order - b.sort_order,
+        );
+
+        const firstImage = sortedImages[0];
+
+        setUploadedImage(getWishImageUrl(firstImage.image_url));
       } catch (error) {
+        if (cancelled) return;
+
         console.error("상품 이미지 불러오기 실패:", error);
+        setUploadedImage(null);
       }
     };
 
@@ -112,12 +77,8 @@ function WishlistCard({
 
     return () => {
       cancelled = true;
-
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
-      }
     };
-  }, [productId]);
+  }, [productId, imageUrl]);
 
   useEffect(() => {
     const updateFavorite = () => {
@@ -152,7 +113,7 @@ function WishlistCard({
     }
   };
 
-  const displayImage = uploadedImage ?? image;
+  const displayImage = imageUrl || uploadedImage || image;
 
   return (
     <article className="wishlist-card">
