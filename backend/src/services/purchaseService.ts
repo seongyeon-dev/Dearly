@@ -25,6 +25,28 @@ export interface UpdatePurchaseInput {
   memo: string | null;
 }
 
+export async function getPurchasesByUserId(
+  userId: number,
+): Promise<PurchaseRow[]> {
+  const [rows] = await pool.execute<PurchaseRow[]>(
+    `SELECT
+      p.purchase_id,
+      p.wish_id,
+      p.amount,
+      DATE_FORMAT(p.purchased_at, '%Y-%m-%d') AS purchased_at,
+      p.store,
+      p.memo
+    FROM purchases p
+    INNER JOIN wishes w ON p.wish_id = w.wish_id
+    WHERE w.user_id = ?
+      AND w.status = 'BOUGHT'
+    ORDER BY p.purchased_at DESC, p.purchase_id DESC`,
+    [userId],
+  );
+
+  return rows;
+}
+
 export async function getPurchaseByWishId(
   userId: number,
   wishId: number,
