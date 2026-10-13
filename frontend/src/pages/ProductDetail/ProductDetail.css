@@ -22,15 +22,17 @@
 }
 
 .detail-back {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 0;
   color: var(--color-text-muted);
   background: none;
   border: none;
+  font-family: inherit;
   font-size: 11px;
   cursor: pointer;
+  transition: color 0.2s ease;
 }
 
 .detail-back:hover {
@@ -39,31 +41,154 @@
 
 .detail-actions {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
   gap: 8px;
 }
 
-.edit-button,
-.delete-button {
-  height: 38px;
-  padding: 0 22px;
+.edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 18px;
+  color: var(--color-primary);
+  background-color: var(--color-primary-bg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-medium);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.edit-cancel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 20px;
   color: var(--color-primary);
   background-color: var(--color-surface);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-medium);
+  font-family: inherit;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.edit-button:hover,
-.delete-button:hover {
+.edit-cancel-button:hover {
   background-color: var(--color-primary-bg);
+}
+
+.edit-save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 22px;
+  color: #ffffff;
+  background-color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-medium);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.edit-save-button:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.edit-button:disabled,
+.edit-cancel-button:disabled,
+.edit-save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.edit-button:focus-visible,
+.edit-cancel-button:focus-visible,
+.edit-save-button:focus-visible,
+.detail-back:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .detail-content {
   display: grid;
   grid-template-columns: 330px minmax(0, 1fr);
+  align-items: start;
   gap: 48px;
+}
+
+.detail-content > * {
+  min-width: 0;
+}
+
+.product-delete-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.product-delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 120px;
+  min-height: 40px;
+  padding: 0 18px;
+  color: #d94b75;
+  background-color: #fff1f4;
+  border: 1px solid #f5d6df;
+  border-radius: var(--radius-medium);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.product-delete-button:hover {
+  background-color: #fce3ea;
+  border-color: #e8a5b8;
+}
+
+.product-delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.product-delete-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 @media (max-width: 900px) {
@@ -92,12 +217,17 @@
   }
 
   .detail-top {
+    gap: 12px;
     margin-bottom: 24px;
   }
 
   .detail-content {
     grid-template-columns: minmax(0, 1fr);
     gap: 28px;
+  }
+
+  .product-delete-section {
+    margin-top: 24px;
   }
 }
 
@@ -107,21 +237,49 @@
   }
 
   .detail-top {
-    align-items: flex-start;
+    align-items: center;
+    gap: 8px;
   }
 
   .detail-back {
+    gap: 5px;
     font-size: 9px;
+  }
+
+  .detail-back svg {
+    width: 15px;
+    height: 15px;
   }
 
   .detail-actions {
-    gap: 5px;
+    gap: 6px;
   }
 
   .edit-button,
-  .delete-button {
-    height: 34px;
+  .edit-cancel-button,
+  .edit-save-button {
+    min-height: 34px;
     padding: 0 12px;
-    font-size: 9px;
+    font-size: 10px;
+  }
+
+  .edit-button {
+    gap: 5px;
+  }
+
+  .edit-button svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .product-delete-section {
+    margin-top: 18px;
+    padding-top: 16px;
+  }
+
+  .product-delete-button {
+    width: 100%;
+    min-height: 40px;
+    font-size: 11px;
   }
 }
