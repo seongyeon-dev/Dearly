@@ -8,6 +8,14 @@ import {
 } from "react";
 import { Plus, X } from "lucide-react";
 
+import {
+  fetchWishImages,
+  uploadWishImage,
+  deleteWishImage,
+  getWishImageUrl,
+  type WishImageResponse,
+} from "../../../api/wishImageApi";
+
 import "./ProductImages.css";
 
 export type ProductImagesHandle = {
@@ -21,150 +29,64 @@ type ProductImagesProps = {
   ref?: Ref<ProductImagesHandle>;
 };
 
-function openImageDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("dearly-images", 2);
+type ProductImage = {
+  key: string;
+  imageId: number | null;
+  url: string;
+  file: File | null;
+};
 
-    request.onupgradeneeded = () => {
-      const database = request.result;
+const MAX_IMAGES = 5;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-      if (!database.objectStoreNames.contains("products")) {
-        database.createObjectStore("products");
-      }
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-      if (!database.objectStoreNames.contains("profiles")) {
-        database.createObjectStore("profiles");
-      }
-    };
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onerror = () => {
-      reject(
-        request.error ?? new Error("이미지 데이터베이스를 열 수 없습니다."),
-      );
-    };
-
-    request.onblocked = () => {
-      console.error("이미지 데이터베이스 업그레이드가 차단되었습니다.");
-    };
-  });
-}
-
-async function loadProductImages(productId: number): Promise<Blob[]> {
-  const database = await openImageDatabase();
-
-  return new Promise((resolve, reject) => {
-    let transaction: IDBTransaction;
-
-    try {
-      transaction = database.transaction("products", "readonly");
-    } catch (error) {
-      database.close();
-      reject(error);
-      return;
-    }
-
-    const store = transaction.objectStore("products");
-    const request = store.get(productId);
-
-    let images: Blob[] = [];
-
-    request.onsuccess = () => {
-      const result: unknown = request.result;
-
-      if (Array.isArray(result)) {
-        images = result.filter((file): file is Blob => file instanceof Blob);
-      }
-    };
-
-    transaction.oncomplete = () => {
-      database.close();
-      resolve(images);
-    };
-
-    transaction.onerror = () => {
-      database.close();
-      reject(
-        transaction.error ?? new Error("상품 이미지 조회에 실패했습니다."),
-      );
-    };
-
-    transaction.onabort = () => {
-      database.close();
-      reject(new Error("상품 이미지 조회가 취소되었습니다."));
-    };
-  });
-}
-
-async function saveProductImages(
-  productId: number,
-  images: Blob[],
-): Promise<void> {
-  const database = await openImageDatabase();
-
-  return new Promise((resolve, reject) => {
-    let transaction: IDBTransaction;
-
-    try {
-      transaction = database.transaction("products", "readwrite");
-
-      const store = transaction.objectStore("products");
-
-      if (images.length > 0) {
-        store.put(images, productId);
-      } else {
-        store.delete(productId);
-      }
-    } catch (error) {
-      database.close();
-      reject(error);
-      return;
-    }
-
-    transaction.oncomplete = () => {
-      database.close();
-      resolve();
-    };
-
-    transaction.onerror = () => {
-      database.close();
-      reject(
-        transaction.error ?? new Error("상품 이미지 저장에 실패했습니다."),
-      );
-    };
-
-    transaction.onabort = () => {
-      database.close();
-      reject(new Error("상품 이미지 저장이 취소되었습니다."));
-    };
-  });
-}
+const toProductImages = (images: WishImageResponse[]): ProductImage[] => {
+  return images.map((image) => ({
+    key: `saved-${image.image_id}`,
+    imageId: image.image_id,
+    url: getWishImageUrl(image.image_url),
+    file: null,
+  }));
+};
 
 function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
-  const [savedImages, setSavedImages] = useState<Blob[]>([]);
-  const [editingImages, setEditingImages] = useState<Blob[]>([]);
+  const [savedImages, setSavedImages] = useState<ProductImage[]>([]);
+  const [editingImages, setEditingImages] = useState<ProductImage[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editingImagesRef = useRef<Blob[]>([]);
-  const savedImagesRef = useRef<Blob[]>([]);
+  const savedImagesRef = useRef<ProductImage[]>([]);
+  const editingImagesRef = useRef<ProductImage[]>([]);
   const wasEditingRef = useRef(isEditing);
   const loadedProductIdRef = useRef<number | null>(null);
+  const savingRef = useRef(false);
+  const temporaryUrlsRef = useRef<Set<string>>(new Set());
 
   const currentImages = isEditing ? editingImages : savedImages;
 
-  useEffect(() => {
-    editingImagesRef.current = editingImages;
-  }, [editingImages]);
+  const setSavedImageList = (images: ProductImage[]) => {
+    savedImagesRef.current = images;
+    setSavedImages(images);
+  };
 
-  useEffect(() => {
-    savedImagesRef.current = savedImages;
-  }, [savedImages]);
+  const setEditingImageList = (images: ProductImage[]) => {
+    editingImagesRef.current = images;
+    setEditingImages(images);
+  };
+
+  const releaseTemporaryUrl = (image: ProductImage) => {
+    if (image.file && temporaryUrlsRef.current.has(image.url)) {
+      URL.revokeObjectURL(image.url);
+      temporaryUrlsRef.current.delete(image.url);
+    }
+  };
+
+  const releaseTemporaryImages = (images: ProductImage[]) => {
+    images.forEach(releaseTemporaryUrl);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -172,26 +94,19 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
     const loadImages = async () => {
       loadedProductIdRef.current = null;
       setIsLoading(true);
-      setSavedImages([]);
-      setEditingImages([]);
-      savedImagesRef.current = [];
-      editingImagesRef.current = [];
+      setSavedImageList([]);
+      setEditingImageList([]);
       setSelectedIndex(0);
 
       try {
-        const files = await loadProductImages(productId);
+        const images = await fetchWishImages(productId);
 
         if (cancelled) return;
 
-        const loadedImages = [...files];
+        const loadedImages = toProductImages(images);
 
-        savedImagesRef.current = loadedImages;
-        editingImagesRef.current = [...loadedImages];
-
-        setSavedImages(loadedImages);
-        setEditingImages([...loadedImages]);
-        setSelectedIndex(0);
-
+        setSavedImageList(loadedImages);
+        setEditingImageList([...loadedImages]);
         loadedProductIdRef.current = productId;
       } catch (error) {
         if (cancelled) return;
@@ -214,18 +129,16 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
 
   useEffect(() => {
     if (isEditing && !wasEditingRef.current) {
-      const initialImages = [...savedImagesRef.current];
+      releaseTemporaryImages(editingImagesRef.current);
 
-      editingImagesRef.current = initialImages;
-      setEditingImages(initialImages);
+      setEditingImageList([...savedImagesRef.current]);
       setSelectedIndex(0);
     }
 
     if (!isEditing && wasEditingRef.current) {
-      const originalImages = [...savedImagesRef.current];
+      releaseTemporaryImages(editingImagesRef.current);
 
-      editingImagesRef.current = originalImages;
-      setEditingImages(originalImages);
+      setEditingImageList([...savedImagesRef.current]);
       setSelectedIndex(0);
     }
 
@@ -233,23 +146,23 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
   }, [isEditing]);
 
   useEffect(() => {
-    const urls = currentImages.map((file) => URL.createObjectURL(file));
-
-    setImageUrls(urls);
-
-    return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [currentImages]);
-
-  useEffect(() => {
     if (selectedIndex >= currentImages.length) {
       setSelectedIndex(0);
     }
   }, [currentImages.length, selectedIndex]);
 
+  useEffect(() => {
+    return () => {
+      temporaryUrlsRef.current.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+
+      temporaryUrlsRef.current.clear();
+    };
+  }, []);
+
   const handleAddImages = (event: ChangeEvent<HTMLInputElement>) => {
-    if (!isEditing || isLoading) {
+    if (!isEditing || isLoading || isSaving) {
       event.target.value = "";
       return;
     }
@@ -258,40 +171,60 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
 
     if (files.length === 0) return;
 
-    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+    const validFiles = files.filter(
+      (file) => ALLOWED_TYPES.includes(file.type) && file.size <= MAX_FILE_SIZE,
+    );
 
-    if (imageFiles.length !== files.length) {
-      alert("이미지 파일만 업로드할 수 있습니다.");
+    if (validFiles.length !== files.length) {
+      alert(
+        "JPG, PNG, WEBP, GIF 이미지만 등록할 수 있으며 파일당 최대 5MB입니다.",
+      );
     }
 
-    const remaining = 5 - editingImagesRef.current.length;
+    const remaining = MAX_IMAGES - editingImagesRef.current.length;
 
-    if (imageFiles.length > remaining) {
+    if (validFiles.length > remaining) {
       alert("상품 이미지는 최대 5장까지 등록할 수 있습니다.");
     }
 
     if (remaining > 0) {
-      const updatedImages = [
-        ...editingImagesRef.current,
-        ...imageFiles.slice(0, remaining),
-      ];
+      const newImages = validFiles
+        .slice(0, remaining)
+        .map((file): ProductImage => {
+          const url = URL.createObjectURL(file);
 
-      editingImagesRef.current = updatedImages;
-      setEditingImages(updatedImages);
+          temporaryUrlsRef.current.add(url);
+
+          return {
+            key: crypto.randomUUID(),
+            imageId: null,
+            url,
+            file,
+          };
+        });
+
+      setEditingImageList([...editingImagesRef.current, ...newImages]);
     }
 
     event.target.value = "";
   };
 
   const handleRemoveImage = (index: number) => {
-    if (!isEditing || isLoading) return;
+    if (!isEditing || isLoading || isSaving) {
+      return;
+    }
+
+    const targetImage = editingImagesRef.current[index];
+
+    if (!targetImage) return;
+
+    releaseTemporaryUrl(targetImage);
 
     const updatedImages = editingImagesRef.current.filter(
       (_, imageIndex) => imageIndex !== index,
     );
 
-    editingImagesRef.current = updatedImages;
-    setEditingImages(updatedImages);
+    setEditingImageList(updatedImages);
     setSelectedIndex(0);
   };
 
@@ -300,23 +233,92 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
       throw new Error("상품 이미지 로딩이 완료되지 않았습니다.");
     }
 
+    if (savingRef.current) {
+      throw new Error("상품 이미지를 저장하는 중입니다.");
+    }
+
+    savingRef.current = true;
+    setIsSaving(true);
+
     const imagesToSave = [...editingImagesRef.current];
 
-    await saveProductImages(productId, imagesToSave);
+    try {
+      const existingImages = await fetchWishImages(productId);
 
-    savedImagesRef.current = imagesToSave;
-    editingImagesRef.current = [...imagesToSave];
+      const retainedIds = new Set(
+        imagesToSave
+          .map((image) => image.imageId)
+          .filter((id): id is number => id !== null),
+      );
 
-    setSavedImages(imagesToSave);
-    setEditingImages([...imagesToSave]);
-    setSelectedIndex(0);
+      const imagesToDelete = existingImages.filter(
+        (image) => !retainedIds.has(image.image_id),
+      );
+
+      for (const image of imagesToDelete) {
+        await deleteWishImage(productId, image.image_id);
+      }
+
+      const remainingImages = await fetchWishImages(productId);
+
+      const usedOrders = new Set(
+        remainingImages.map((image) => image.sort_order),
+      );
+
+      const newImages = imagesToSave.filter((image) => image.file !== null);
+
+      for (const image of newImages) {
+        if (!image.file) continue;
+
+        const availableOrder = Array.from(
+          { length: MAX_IMAGES },
+          (_, index) => index + 1,
+        ).find((order) => !usedOrders.has(order));
+
+        if (availableOrder === undefined) {
+          throw new Error("상품 이미지는 최대 5장까지 등록할 수 있습니다.");
+        }
+
+        await uploadWishImage(productId, image.file, availableOrder);
+
+        usedOrders.add(availableOrder);
+      }
+
+      const updatedImages = await fetchWishImages(productId);
+
+      releaseTemporaryImages(imagesToSave);
+
+      const saved = toProductImages(updatedImages);
+
+      setSavedImageList(saved);
+      setEditingImageList([...saved]);
+      setSelectedIndex(0);
+    } catch (error) {
+      try {
+        const latestImages = await fetchWishImages(productId);
+
+        const saved = toProductImages(latestImages);
+
+        setSavedImageList(saved);
+      } catch (refreshError) {
+        console.error("상품 이미지 재조회 실패:", refreshError);
+      }
+
+      console.error("상품 이미지 저장 실패:", error);
+
+      throw error;
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
-    const originalImages = [...savedImagesRef.current];
+    if (savingRef.current) return;
 
-    editingImagesRef.current = originalImages;
-    setEditingImages(originalImages);
+    releaseTemporaryImages(editingImagesRef.current);
+
+    setEditingImageList([...savedImagesRef.current]);
     setSelectedIndex(0);
 
     if (fileInputRef.current) {
@@ -329,20 +331,20 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
     cancel: handleCancelEdit,
   }));
 
-  const selectedImage = imageUrls[selectedIndex];
+  const selectedImage = currentImages[selectedIndex];
 
   return (
     <section className="detail-images">
       <div className="detail-main-image">
         {selectedImage && (
           <img
-            src={selectedImage}
+            src={selectedImage.url}
             alt={`상품 이미지 ${selectedIndex + 1}`}
             className="detail-uploaded-image"
           />
         )}
 
-        {isEditing && selectedImage && !isLoading && (
+        {isEditing && selectedImage && !isLoading && !isSaving && (
           <button
             type="button"
             className="detail-main-image-remove"
@@ -355,8 +357,8 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
       </div>
 
       <div className="detail-thumbnails">
-        {imageUrls.map((imageUrl, index) => (
-          <div className="detail-thumbnail-wrapper" key={index}>
+        {currentImages.map((image, index) => (
+          <div className="detail-thumbnail-wrapper" key={image.key}>
             <button
               type="button"
               className={`detail-thumbnail ${
@@ -366,13 +368,13 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
               aria-label={`상품 이미지 ${index + 1} 보기`}
             >
               <img
-                src={imageUrl}
+                src={image.url}
                 alt={`상품 썸네일 ${index + 1}`}
                 className="detail-thumbnail-image"
               />
             </button>
 
-            {isEditing && !isLoading && (
+            {isEditing && !isLoading && !isSaving && (
               <button
                 type="button"
                 className="detail-thumbnail-remove"
@@ -385,20 +387,23 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
           </div>
         ))}
 
-        {isEditing && !isLoading && editingImages.length < 5 && (
-          <button
-            type="button"
-            className="detail-thumbnail detail-thumbnail-add"
-            onClick={() => fileInputRef.current?.click()}
-            aria-label="상품 이미지 추가"
-          >
-            <Plus size={20} />
-            <span>추가</span>
-          </button>
-        )}
+        {isEditing &&
+          !isLoading &&
+          !isSaving &&
+          editingImages.length < MAX_IMAGES && (
+            <button
+              type="button"
+              className="detail-thumbnail detail-thumbnail-add"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="상품 이미지 추가"
+            >
+              <Plus size={20} />
+              <span>추가</span>
+            </button>
+          )}
 
         {!isEditing &&
-          imageUrls.length === 0 &&
+          currentImages.length === 0 &&
           [1, 2, 3].map((number) => (
             <button
               type="button"
@@ -414,7 +419,7 @@ function ProductImages({ productId, isEditing, ref }: ProductImagesProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         multiple
         hidden
         onChange={handleAddImages}
