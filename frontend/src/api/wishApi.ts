@@ -1,9 +1,13 @@
+export type WishCategory = "BEAUTY" | "FASHION" | "LIFESTYLE" | "OTHER";
+
+export type WishStatus = "WANT" | "CONSIDERING" | "BOUGHT";
+
 export interface WishResponse {
   wish_id: number;
   user_id: number;
   name: string;
-  category: "BEAUTY" | "FASHION" | "LIFESTYLE" | "OTHER";
-  status: "WANT" | "CONSIDERING" | "BOUGHT";
+  category: WishCategory;
+  status: WishStatus;
   expected_price: number;
   is_favorite: number | boolean;
 }
@@ -16,8 +20,8 @@ export interface WishDetailResponse extends WishResponse {
 
 export interface CreateWishRequest {
   name: string;
-  category: "BEAUTY" | "FASHION" | "LIFESTYLE" | "OTHER";
-  status: "WANT" | "CONSIDERING" | "BOUGHT";
+  category: WishCategory;
+  status: WishStatus;
   expected_price: number;
   planned_date: string | null;
   purchase_link: string | null;
@@ -29,15 +33,19 @@ export interface CreateWishResponse extends CreateWishRequest {
 }
 
 export interface UpdateWishRequest {
+  name?: string;
+  category?: WishCategory;
   expected_price?: number;
   planned_date?: string | null;
   purchase_link?: string | null;
   memo?: string | null;
-  status?: "WANT" | "CONSIDERING" | "BOUGHT";
+  status?: WishStatus;
 }
 
+const API_BASE_URL = "http://localhost:3000/api/wishes";
+
 export async function fetchWishes(): Promise<WishResponse[]> {
-  const response = await fetch("http://localhost:3000/api/wishes");
+  const response = await fetch(API_BASE_URL);
 
   if (!response.ok) {
     throw new Error("위시리스트 조회에 실패했습니다.");
@@ -49,7 +57,7 @@ export async function fetchWishes(): Promise<WishResponse[]> {
 export async function fetchWishById(
   wishId: number,
 ): Promise<WishDetailResponse> {
-  const response = await fetch(`http://localhost:3000/api/wishes/${wishId}`);
+  const response = await fetch(`${API_BASE_URL}/${wishId}`);
 
   if (!response.ok) {
     throw new Error("상품 상세 조회에 실패했습니다.");
@@ -61,7 +69,7 @@ export async function fetchWishById(
 export async function createWish(
   data: CreateWishRequest,
 ): Promise<CreateWishResponse> {
-  const response = await fetch("http://localhost:3000/api/wishes", {
+  const response = await fetch(API_BASE_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -80,7 +88,7 @@ export async function updateWish(
   wishId: number,
   data: UpdateWishRequest,
 ): Promise<WishDetailResponse> {
-  const response = await fetch(`http://localhost:3000/api/wishes/${wishId}`, {
+  const response = await fetch(`${API_BASE_URL}/${wishId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -96,7 +104,7 @@ export async function updateWish(
 }
 
 export async function deleteWish(wishId: number): Promise<void> {
-  const response = await fetch(`http://localhost:3000/api/wishes/${wishId}`, {
+  const response = await fetch(`${API_BASE_URL}/${wishId}`, {
     method: "DELETE",
   });
 
