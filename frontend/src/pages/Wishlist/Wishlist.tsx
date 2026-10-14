@@ -82,6 +82,7 @@ function Wishlist() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingFavorites, setUpdatingFavorites] = useState<number[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,15 +124,11 @@ function Wishlist() {
           }),
         );
 
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         setItems(convertedItems);
       } catch (err) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         setError(
           err instanceof Error
@@ -151,6 +148,49 @@ function Wishlist() {
       cancelled = true;
     };
   }, []);
+
+  const handleFavoriteToggle = async (productId: number) => {
+    if (updatingFavorites.includes(productId)) return;
+
+    const targetItem = items.find((item) => item.id === productId);
+
+    if (!targetItem) return;
+
+    const nextFavorite = !targetItem.isFavorite;
+
+    setUpdatingFavorites((prev) => [...prev, productId]);
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/wishes/${productId}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            is_favorite: nextFavorite,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("관심 상품 저장에 실패했습니다.");
+      }
+
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === productId ? { ...item, isFavorite: nextFavorite } : item,
+        ),
+      );
+    } catch (err) {
+      console.error("관심 상품 변경 실패:", err);
+      alert("관심 상품 변경에 실패했습니다.");
+    } finally {
+      setUpdatingFavorites((prev) => prev.filter((id) => id !== productId));
+    }
+  };
 
   const categoryParam = searchParams.get("category");
 
@@ -271,6 +311,9 @@ function Wishlist() {
                   price={item.price}
                   status={item.status}
                   statusClass={item.statusClass}
+                  isFavorite={item.isFavorite}
+                  onFavoriteToggle={handleFavoriteToggle}
+                  favoriteLoading={updatingFavorites.includes(item.id)}
                 />
               </div>
             ))
