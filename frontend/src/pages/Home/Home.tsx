@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import CategoryChart from "../../components/CategoryChart/CategoryChart";
 import MonthSelector from "../../components/MonthSelector/MonthSelector";
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
-import { fetchWishes } from "../../api/wishApi";
+import { fetchWishes, updateWish } from "../../api/wishApi";
 import { fetchPurchaseByWishId } from "../../api/purchaseApi";
 import { fetchWishImages, getWishImageUrl } from "../../api/wishImageApi";
-import type { Wish, WishCategory } from "../../types/wish";
+import type { Wish } from "../../types/wish";
 import MonthlySummary from "./MonthlySummary/MonthlySummary";
 
 import "./Home.css";
@@ -31,6 +31,7 @@ const statusMap: Record<ProductStatus, Pick<Wish, "status" | "statusClass">> = {
 
 type RecentWishlistItem = Wish & {
   imageUrl: string | null;
+  isFavorite: boolean;
 };
 
 function getCurrentMonth(): string {
@@ -42,15 +43,32 @@ function getCurrentMonth(): string {
   )}`;
 }
 
+function getWishCreatedMonth(createdAt: string): string {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}`;
+}
+
 function Home() {
   const navigate = useNavigate();
 
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
+
   const [recentWishlistItems, setRecentWishlistItems] = useState<
     RecentWishlistItem[]
   >([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+
+  const [updatingFavorites, setUpdatingFavorites] = useState<number[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,12 +76,24 @@ function Home() {
     async function loadRecentWishes() {
       setIsLoading(true);
       setLoadError("");
+      setRecentWishlistItems([]);
 
       try {
         const wishes = await fetchWishes();
 
-        const recentWishes = [...wishes]
-          .sort((a, b) => b.wish_id - a.wish_id)
+        const recentWishes = wishes
+          .filter(
+            (item) =>
+              item.created_at &&
+              getWishCreatedMonth(item.created_at) === selectedMonth,
+          )
+          .sort((a, b) => {
+            const dateDifference =
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime();
+
+            return dateDifference || b.wish_id - a.wish_id;
+          })
           .slice(0, 4);
 
         const convertedItems: RecentWishlistItem[] = await Promise.all(
@@ -103,10 +133,11 @@ function Home() {
             return {
               id: item.wish_id,
               name: item.name,
-              category: item.category as WishCategory,
+              category: item.category,
               price: `${displayPrice.toLocaleString("ko-KR")}원`,
               imageUrl,
               ...statusMap[item.status],
+              isFavorite: Boolean(item.is_favorite),
             };
           }),
         );
@@ -118,7 +149,6 @@ function Home() {
         if (cancelled) return;
 
         console.error("최근 위시 상품 조회 실패:", error);
-
         setLoadError("최근 위시 상품을 불러오지 못했습니다.");
       } finally {
         if (!cancelled) {
@@ -132,7 +162,47 @@ function Home() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [selectedMonth]);
+
+  const handleFavoriteToggle = async (productId: number) => {
+    if (updatingFavorites.includes(productId)) {
+      return;
+    }
+
+    const targetItem = recentWishlistItems.find(
+      (item) => item.id === productId,
+    );
+
+    if (!targetItem) {
+      return;
+    }
+
+    const nextFavorite = !targetItem.isFavorite;
+
+    setUpdatingFavorites((prev) => [...prev, productId]);
+
+    try {
+      await updateWish(productId, {
+        is_favorite: nextFavorite,
+      });
+
+      setRecentWishlistItems((prev) =>
+        prev.map((item) =>
+          item.id === productId
+            ? {
+                ...item,
+                isFavorite: nextFavorite,
+              }
+            : item,
+        ),
+      );
+    } catch (error) {
+      console.error("관심 상품 변경 실패:", error);
+      alert("관심 상품 변경에 실패했습니다.");
+    } finally {
+      setUpdatingFavorites((prev) => prev.filter((id) => id !== productId));
+    }
+  };
 
   return (
     <main className="home">
@@ -184,11 +254,14 @@ function Home() {
                     status={item.status}
                     statusClass={item.statusClass}
                     imageUrl={item.imageUrl}
+                    isFavorite={item.isFavorite}
+                    onFavoriteToggle={handleFavoriteToggle}
+                    favoriteLoading={updatingFavorites.includes(item.id)}
                   />
                 </div>
               ))
             ) : (
-              <p>등록된 위시 상품이 없습니다.</p>
+              <p>해당 월에 등록한 위시 상품이 없습니다.</p>
             )}
           </div>
         </section>
