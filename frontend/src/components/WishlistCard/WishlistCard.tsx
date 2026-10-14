@@ -2,7 +2,6 @@ import { useEffect, useState, type MouseEvent } from "react";
 import { Heart } from "lucide-react";
 
 import type { WishStatus, WishStatusClass } from "../../types/wish";
-import { isFavorite, toggleFavorite } from "../../utils/favoriteStorage";
 import { fetchWishImages, getWishImageUrl } from "../../api/wishImageApi";
 
 import "./WishlistCard.css";
@@ -15,6 +14,9 @@ type WishlistCardProps = {
   price: string;
   status: WishStatus;
   statusClass: WishStatusClass;
+  isFavorite?: boolean;
+  onFavoriteToggle?: (productId: number) => void | Promise<void>;
+  favoriteLoading?: boolean;
 };
 
 function WishlistCard({
@@ -25,20 +27,14 @@ function WishlistCard({
   price,
   status,
   statusClass,
+  isFavorite = false,
+  onFavoriteToggle,
+  favoriteLoading = false,
 }: WishlistCardProps) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
 
-  const [favorite, setFavorite] = useState(() =>
-    productId !== undefined ? isFavorite(productId) : false,
-  );
-
   useEffect(() => {
-    if (imageUrl) {
-      setUploadedImage(null);
-      return;
-    }
-
-    if (productId === undefined) {
+    if (imageUrl || productId === undefined) {
       setUploadedImage(null);
       return;
     }
@@ -80,37 +76,15 @@ function WishlistCard({
     };
   }, [productId, imageUrl]);
 
-  useEffect(() => {
-    const updateFavorite = () => {
-      setFavorite(productId !== undefined ? isFavorite(productId) : false);
-    };
-
-    updateFavorite();
-
-    window.addEventListener("dearly-favorites-updated", updateFavorite);
-    window.addEventListener("storage", updateFavorite);
-
-    return () => {
-      window.removeEventListener("dearly-favorites-updated", updateFavorite);
-      window.removeEventListener("storage", updateFavorite);
-    };
-  }, [productId]);
-
   const handleFavoriteClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
 
-    if (productId === undefined) {
+    if (productId === undefined || !onFavoriteToggle || favoriteLoading) {
       return;
     }
 
-    try {
-      const updatedFavorite = toggleFavorite(productId);
-      setFavorite(updatedFavorite);
-    } catch (error) {
-      console.error("관심 상품 저장 실패:", error);
-      alert("관심 상품 저장에 실패했습니다.");
-    }
+    void onFavoriteToggle(productId);
   };
 
   const displayImage = imageUrl || uploadedImage || image;
@@ -126,17 +100,19 @@ function WishlistCard({
 
         <button
           type="button"
-          className={`heart-button ${favorite ? "active" : ""}`}
+          className={`heart-button ${isFavorite ? "active" : ""}`}
           onClick={handleFavoriteClick}
-          disabled={productId === undefined}
-          aria-label={favorite ? "관심 상품 해제" : "관심 상품 등록"}
-          aria-pressed={favorite}
+          disabled={
+            productId === undefined || !onFavoriteToggle || favoriteLoading
+          }
+          aria-label={isFavorite ? "관심 상품 해제" : "관심 상품 등록"}
+          aria-pressed={isFavorite}
         >
           <Heart
             className="heart-icon"
             size={18}
             strokeWidth={1.5}
-            fill={favorite ? "currentColor" : "none"}
+            fill={isFavorite ? "currentColor" : "none"}
           />
         </button>
       </div>

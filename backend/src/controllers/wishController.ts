@@ -1,4 +1,3 @@
-
 import type { Request, Response } from "express";
 import {
   getWishes,
@@ -22,6 +21,7 @@ const allowedUpdateFields = [
   "purchase_link",
   "memo",
   "status",
+  "is_favorite",
 ];
 
 function isValidDate(value: string): boolean {
@@ -32,8 +32,7 @@ function isValidDate(value: string): boolean {
   const date = new Date(`${value}T00:00:00Z`);
 
   return (
-    !Number.isNaN(date.getTime()) &&
-    date.toISOString().slice(0, 10) === value
+    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
   );
 }
 
@@ -141,8 +140,7 @@ export async function createWish(req: Request, res: Response) {
       (body.planned_date != null &&
         (typeof body.planned_date !== "string" ||
           !isValidDate(body.planned_date))) ||
-      (body.purchase_link != null &&
-        typeof body.purchase_link !== "string") ||
+      (body.purchase_link != null && typeof body.purchase_link !== "string") ||
       (body.memo != null &&
         (typeof body.memo !== "string" || body.memo.length > 300))
     ) {
@@ -204,7 +202,11 @@ export async function updateWish(req: Request, res: Response) {
       return;
     }
 
-    const body = req.body as Partial<UpdateWishInput> | null;
+    const body = req.body as
+      | (Partial<UpdateWishInput> & {
+          is_favorite?: boolean;
+        })
+      | null;
 
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       res.status(400).json({
@@ -247,7 +249,8 @@ export async function updateWish(req: Request, res: Response) {
         body.memo !== null &&
         (typeof body.memo !== "string" || body.memo.length > 300)) ||
       (body.status !== undefined &&
-        !statuses.some((item) => item === body.status))
+        !statuses.some((item) => item === body.status)) ||
+      (body.is_favorite !== undefined && typeof body.is_favorite !== "boolean")
     ) {
       res.status(400).json({
         message: "수정할 상품 정보를 확인해주세요.",
@@ -262,7 +265,9 @@ export async function updateWish(req: Request, res: Response) {
       return;
     }
 
-    const data: UpdateWishInput = {};
+    const data: UpdateWishInput & {
+      is_favorite?: boolean;
+    } = {};
 
     if (body.name !== undefined) {
       data.name = body.name.trim();
@@ -290,6 +295,10 @@ export async function updateWish(req: Request, res: Response) {
 
     if (body.status !== undefined) {
       data.status = body.status;
+    }
+
+    if (body.is_favorite !== undefined) {
+      data.is_favorite = body.is_favorite;
     }
 
     const updatedWish = await updateWishInDb(userId, wishId, data);

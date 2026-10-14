@@ -36,6 +36,7 @@ export interface UpdateWishInput {
   purchase_link?: string | null;
   memo?: string | null;
   status?: WishStatus;
+  is_favorite?: boolean;
 }
 
 export async function getWishes(userId: number): Promise<WishRow[]> {
@@ -136,6 +137,11 @@ export async function updateWishInDb(
   if (data.status !== undefined) {
     fields.push("status = ?");
     values.push(data.status);
+  }
+
+  if (data.is_favorite !== undefined) {
+    fields.push("is_favorite = ?");
+    values.push(data.is_favorite ? 1 : 0);
   }
 
   if (fields.length === 0) {

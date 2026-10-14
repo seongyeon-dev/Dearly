@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import type { WishCategory } from "../../../types/wish";
 import { createWish } from "../../../api/wishApi";
-import { savePurchase } from "../../../utils/purchaseStorage";
+import { uploadWishImage } from "../../../api/wishImageApi";
+import { createPurchase } from "../../../api/purchaseApi";
 
 import PurchaseModal, {
   type PurchaseData,
@@ -16,54 +17,6 @@ type ProductStatus = "WANT" | "CONSIDERING" | "BOUGHT";
 type ProductFormProps = {
   images: File[];
 };
-
-const categoryNames: Record<WishCategory, string> = {
-  BEAUTY: "뷰티",
-  FASHION: "패션",
-  LIFESTYLE: "라이프스타일",
-  OTHER: "기타",
-};
-
-function saveProductImages(productId: number, images: File[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("dearly-images", 1);
-
-    request.onupgradeneeded = () => {
-      const database = request.result;
-
-      if (!database.objectStoreNames.contains("products")) {
-        database.createObjectStore("products");
-      }
-    };
-
-    request.onerror = () => {
-      reject(new Error("이미지 데이터베이스를 열 수 없습니다."));
-    };
-
-    request.onsuccess = () => {
-      const database = request.result;
-      const transaction = database.transaction("products", "readwrite");
-      const store = transaction.objectStore("products");
-
-      store.put(images, productId);
-
-      transaction.oncomplete = () => {
-        database.close();
-        resolve();
-      };
-
-      transaction.onerror = () => {
-        database.close();
-        reject(new Error("이미지 저장에 실패했습니다."));
-      };
-
-      transaction.onabort = () => {
-        database.close();
-        reject(new Error("이미지 저장이 취소되었습니다."));
-      };
-    };
-  });
-}
 
 function ProductForm({ images }: ProductFormProps) {
   const navigate = useNavigate();
@@ -112,7 +65,9 @@ function ProductForm({ images }: ProductFormProps) {
   };
 
   const saveProduct = async (purchaseData: PurchaseData | null) => {
-    if (isSaving) return;
+    if (isSaving) {
+      return;
+    }
 
     setIsSaving(true);
 
@@ -124,37 +79,33 @@ function ProductForm({ images }: ProductFormProps) {
       const savedProduct = await createWish({
         name: name.trim(),
         category,
-        status,
+        status: purchaseData ? "WANT" : status,
         expected_price: numericPrice,
         planned_date: plannedDate || null,
         purchase_link: purchaseLink.trim() || null,
-        memo: memo || null,
+        memo: memo.trim() || null,
       });
 
       savedProductId = savedProduct.wish_id;
 
-      if (images.length > 0) {
-        await saveProductImages(savedProductId, images);
+      for (let index = 0; index < images.length; index++) {
+        await uploadWishImage(savedProductId, images[index], index + 1);
       }
 
       if (purchaseData) {
-        const success = savePurchase({
-          wishId: savedProductId,
-          name: savedProduct.name,
-          category: categoryNames[category],
+        await createPurchase({
+          wish_id: savedProductId,
           amount: purchaseData.amount,
-          date: purchaseData.date,
-          store: purchaseData.store,
-          memo: purchaseData.memo,
+          purchased_at: purchaseData.date,
+          store: purchaseData.store || null,
+          memo: purchaseData.memo || null,
         });
-
-        if (!success) {
-          throw new Error("구매 기록 저장 실패");
-        }
       }
 
       setIsPurchaseModalOpen(false);
+
       alert("상품이 추가되었습니다!");
+
       navigate("/wishlist");
     } catch (error) {
       console.error("상품 등록 실패:", error);
@@ -172,7 +123,9 @@ function ProductForm({ images }: ProductFormProps) {
   };
 
   const handleSubmit = () => {
-    if (isSaving || !validateForm()) return;
+    if (isSaving || !validateForm()) {
+      return;
+    }
 
     if (status === "BOUGHT") {
       setIsPurchaseModalOpen(true);
@@ -320,7 +273,9 @@ function ProductForm({ images }: ProductFormProps) {
         productName={name.trim()}
         productPrice={Number(price) || 0}
         onClose={() => {
-          if (!isSaving) setIsPurchaseModalOpen(false);
+          if (!isSaving) {
+            setIsPurchaseModalOpen(false);
+          }
         }}
         onSave={handlePurchaseSave}
       />

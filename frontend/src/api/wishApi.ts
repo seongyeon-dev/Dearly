@@ -10,6 +10,7 @@ export interface WishResponse {
   status: WishStatus;
   expected_price: number;
   is_favorite: number | boolean;
+  created_at: string;
 }
 
 export interface WishDetailResponse extends WishResponse {
@@ -40,6 +41,7 @@ export interface UpdateWishRequest {
   purchase_link?: string | null;
   memo?: string | null;
   status?: WishStatus;
+  is_favorite?: boolean;
 }
 
 const API_BASE_URL = "http://localhost:3000/api/wishes";
