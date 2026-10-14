@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import fs from "fs/promises";
 import path from "path";
 
+import { getWishById } from "../services/wishService";
 import {
   getWishImages,
   createWishImage,
@@ -35,11 +36,29 @@ export const getWishImagesController = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = parsePositiveId(req.params.wishId);
 
     if (wishId === null) {
       res.status(400).json({
         message: "올바른 상품 ID를 입력해주세요.",
+      });
+      return;
+    }
+
+    const wish = await getWishById(userId, wishId);
+
+    if (!wish) {
+      res.status(404).json({
+        message: "상품을 찾을 수 없습니다.",
       });
       return;
     }
@@ -62,17 +81,42 @@ export const createWishImageController = async (
 ): Promise<void> => {
   const uploadedFile = req.file;
 
+  const cleanup = async () => {
+    if (uploadedFile) {
+      await removeUploadedFile(uploadedFile.filename);
+    }
+  };
+
   try {
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      await cleanup();
+
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = parsePositiveId(req.params.wishId);
-    const sortOrder = Number(req.body?.sort_order);
 
     if (wishId === null) {
-      if (uploadedFile) {
-        await removeUploadedFile(uploadedFile.filename);
-      }
+      await cleanup();
 
       res.status(400).json({
         message: "올바른 상품 ID를 입력해주세요.",
+      });
+      return;
+    }
+
+    const wish = await getWishById(userId, wishId);
+
+    if (!wish) {
+      await cleanup();
+
+      res.status(404).json({
+        message: "상품을 찾을 수 없습니다.",
       });
       return;
     }
@@ -84,6 +128,8 @@ export const createWishImageController = async (
       return;
     }
 
+    const sortOrder = Number(req.body?.sort_order);
+
     if (
       req.body?.sort_order === undefined ||
       req.body?.sort_order === "" ||
@@ -91,7 +137,7 @@ export const createWishImageController = async (
       sortOrder < 1 ||
       sortOrder > MAX_IMAGES
     ) {
-      await removeUploadedFile(uploadedFile.filename);
+      await cleanup();
 
       res.status(400).json({
         message: "이미지 순서는 1부터 5까지 입력해주세요.",
@@ -102,7 +148,7 @@ export const createWishImageController = async (
     const existingImages = await getWishImages(wishId);
 
     if (existingImages.length >= MAX_IMAGES) {
-      await removeUploadedFile(uploadedFile.filename);
+      await cleanup();
 
       res.status(400).json({
         message: "상품 이미지는 최대 5장까지 등록할 수 있습니다.",
@@ -111,7 +157,7 @@ export const createWishImageController = async (
     }
 
     if (existingImages.some((image) => image.sort_order === sortOrder)) {
-      await removeUploadedFile(uploadedFile.filename);
+      await cleanup();
 
       res.status(409).json({
         message: "이미 사용 중인 이미지 순서입니다.",
@@ -130,9 +176,7 @@ export const createWishImageController = async (
       sort_order: sortOrder,
     });
   } catch (error) {
-    if (uploadedFile) {
-      await removeUploadedFile(uploadedFile.filename);
-    }
+    await cleanup();
 
     console.error("상품 이미지 등록 실패:", error);
 
@@ -147,12 +191,30 @@ export const deleteWishImageController = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const userId = req.session.userId;
+
+    if (userId === undefined) {
+      res.status(401).json({
+        message: "로그인이 필요합니다.",
+      });
+      return;
+    }
+
     const wishId = parsePositiveId(req.params.wishId);
     const imageId = parsePositiveId(req.params.imageId);
 
     if (wishId === null || imageId === null) {
       res.status(400).json({
         message: "올바른 상품 ID와 이미지 ID를 입력해주세요.",
+      });
+      return;
+    }
+
+    const wish = await getWishById(userId, wishId);
+
+    if (!wish) {
+      res.status(404).json({
+        message: "상품을 찾을 수 없습니다.",
       });
       return;
     }

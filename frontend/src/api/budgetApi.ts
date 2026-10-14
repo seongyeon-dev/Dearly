@@ -19,6 +19,7 @@ export async function fetchBudget(
 ): Promise<BudgetResponse | null> {
   const response = await axios.get<BudgetResponse | null>(API_URL, {
     params: { month },
+    withCredentials: true,
   });
 
   return response.data;
@@ -27,7 +28,9 @@ export async function fetchBudget(
 export async function saveBudget(
   data: SaveBudgetRequest,
 ): Promise<BudgetResponse> {
-  const response = await axios.put<BudgetResponse>(API_URL, data);
+  const response = await axios.put<BudgetResponse>(API_URL, data, {
+    withCredentials: true,
+  });
 
   return response.data;
 }

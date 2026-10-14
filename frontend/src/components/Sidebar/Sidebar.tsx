@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 
 import {
   ChartNoAxesColumnIncreasing,
@@ -17,6 +18,12 @@ type ProfileData = {
   introduction: string;
 };
 
+type CurrentUser = {
+  user_id: number;
+  email: string;
+  nickname: string;
+};
+
 const PROFILE_STORAGE_KEY = "dearly-profile";
 
 const categories = [
@@ -27,14 +34,14 @@ const categories = [
   { name: "기타", value: "OTHER" },
 ];
 
-function getSavedProfile(): ProfileData {
+function getSavedProfile(userId: number): ProfileData {
   const defaultProfile: ProfileData = {
     nickname: "Dearly, Me",
     introduction: "나의 위시리스트",
   };
 
   try {
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+    const saved = localStorage.getItem(`${PROFILE_STORAGE_KEY}-${userId}`);
 
     if (!saved) {
       return defaultProfile;
@@ -62,7 +69,7 @@ function getSavedProfile(): ProfileData {
   }
 }
 
-function getSavedProfileImage(): Promise<Blob | null> {
+function getSavedProfileImage(userId: number): Promise<Blob | null> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("dearly-images", 2);
 
@@ -84,16 +91,14 @@ function getSavedProfileImage(): Promise<Blob | null> {
 
     request.onsuccess = () => {
       const database = request.result;
-
       const transaction = database.transaction("profiles", "readonly");
 
       const imageRequest = transaction
         .objectStore("profiles")
-        .get("my-profile");
+        .get(`my-profile-${userId}`);
 
       imageRequest.onsuccess = () => {
         const result: unknown = imageRequest.result;
-
         resolve(result instanceof Blob ? result : null);
       };
 
@@ -119,33 +124,82 @@ function getSavedProfileImage(): Promise<Blob | null> {
 function Sidebar() {
   const location = useLocation();
 
-  const [profile, setProfile] = useState<ProfileData>(getSavedProfile);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  const [profile, setProfile] = useState<ProfileData>({
+    nickname: "Dearly, Me",
+    introduction: "나의 위시리스트",
+  });
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
-    const updateProfile = () => {
-      setProfile(getSavedProfile());
+    let active = true;
+
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await axios.get<{ user: CurrentUser }>(
+          "http://localhost:3000/api/auth/me",
+          {
+            withCredentials: true,
+          },
+        );
+
+        if (active) {
+          setUser(response.data.user);
+        }
+      } catch (error) {
+        if (active) {
+          setUser(null);
+        }
+
+        console.error("사용자 정보 조회 실패:", error);
+      }
     };
 
-    window.addEventListener("dearly-profile-updated", updateProfile);
-
-    window.addEventListener("storage", updateProfile);
+    void fetchCurrentUser();
 
     return () => {
-      window.removeEventListener("dearly-profile-updated", updateProfile);
-
-      window.removeEventListener("storage", updateProfile);
+      active = false;
     };
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setProfile({
+        nickname: "Dearly, Me",
+        introduction: "나의 위시리스트",
+      });
+      return;
+    }
+
+    const updateProfile = () => {
+      setProfile(getSavedProfile(user.user_id));
+    };
+
+    updateProfile();
+
+    window.addEventListener("dearly-profile-updated", updateProfile);
+    window.addEventListener("storage", updateProfile);
+
+    return () => {
+      window.removeEventListener("dearly-profile-updated", updateProfile);
+      window.removeEventListener("storage", updateProfile);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setProfileImage(null);
+      return;
+    }
+
     let active = true;
     let currentImageUrl: string | null = null;
 
     const updateProfileImage = async () => {
       try {
-        const savedImage = await getSavedProfileImage();
+        const savedImage = await getSavedProfileImage(user.user_id);
 
         if (!active) {
           return;
@@ -182,7 +236,7 @@ function Sidebar() {
         URL.revokeObjectURL(currentImageUrl);
       }
     };
-  }, []);
+  }, [user]);
 
   const searchParams = new URLSearchParams(location.search);
   const selectedCategory = searchParams.get("category");
@@ -207,7 +261,9 @@ function Sidebar() {
           )}
         </div>
 
-        <strong className="sidebar-profile-name">{profile.nickname}</strong>
+        <strong className="sidebar-profile-name">
+          {user ? user.nickname : profile.nickname}
+        </strong>
 
         <span className="sidebar-profile-description">
           {profile.introduction}

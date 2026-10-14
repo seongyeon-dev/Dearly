@@ -1,24 +1,70 @@
 import { useState, type SyntheticEvent } from "react";
 import { LockKeyhole, Mail, UserRound } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
+import { signup } from "../../api/authApi";
 import "./Signup.css";
 
 function Signup() {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [nickname, setNickname] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    console.log({
-      email,
-      password,
-      passwordConfirm,
-      nickname,
-    });
+    setError("");
+
+    if (password !== passwordConfirm) {
+      setError("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+    if (!passwordPattern.test(password)) {
+      setError(
+        "비밀번호는 영문, 숫자, 특수문자를 포함해 8자 이상이어야 합니다.",
+      );
+      return;
+    }
+
+    const trimmedNickname = nickname.trim();
+
+    if (trimmedNickname.length < 2 || trimmedNickname.length > 10) {
+      setError("닉네임은 2자 이상 10자 이하로 입력해주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await signup({
+        email: email.trim(),
+        password,
+        nickname: trimmedNickname,
+      });
+
+      navigate("/login", { replace: true });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setError(
+          typeof error.response?.data?.message === "string"
+            ? error.response.data.message
+            : "회원가입에 실패했습니다.",
+        );
+      } else {
+        setError("회원가입 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -42,6 +88,7 @@ function Signup() {
                 value={email}
                 placeholder="이메일을 입력해주세요."
                 onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
                 required
               />
             </div>
@@ -61,6 +108,8 @@ function Signup() {
                 value={password}
                 placeholder="비밀번호를 입력해주세요."
                 onChange={(event) => setPassword(event.target.value)}
+                autoComplete="new-password"
+                minLength={8}
                 required
               />
             </div>
@@ -82,6 +131,7 @@ function Signup() {
                 value={passwordConfirm}
                 placeholder="비밀번호를 다시 입력해주세요."
                 onChange={(event) => setPasswordConfirm(event.target.value)}
+                autoComplete="new-password"
                 required
               />
             </div>
@@ -108,8 +158,14 @@ function Signup() {
             <span className="signup-helper">2자 이상 10자 이하</span>
           </div>
 
-          <button type="submit" className="signup-button">
-            회원가입
+          {error && (
+            <p className="signup-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          <button type="submit" className="signup-button" disabled={isLoading}>
+            {isLoading ? "가입 중..." : "회원가입"}
           </button>
         </form>
 

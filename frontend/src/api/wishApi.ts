@@ -45,7 +45,9 @@ export interface UpdateWishRequest {
 const API_BASE_URL = "http://localhost:3000/api/wishes";
 
 export async function fetchWishes(): Promise<WishResponse[]> {
-  const response = await fetch(API_BASE_URL);
+  const response = await fetch(API_BASE_URL, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
     throw new Error("위시리스트 조회에 실패했습니다.");
@@ -57,7 +59,9 @@ export async function fetchWishes(): Promise<WishResponse[]> {
 export async function fetchWishById(
   wishId: number,
 ): Promise<WishDetailResponse> {
-  const response = await fetch(`${API_BASE_URL}/${wishId}`);
+  const response = await fetch(`${API_BASE_URL}/${wishId}`, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
     throw new Error("상품 상세 조회에 실패했습니다.");
@@ -71,6 +75,7 @@ export async function createWish(
 ): Promise<CreateWishResponse> {
   const response = await fetch(API_BASE_URL, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -90,6 +95,7 @@ export async function updateWish(
 ): Promise<WishDetailResponse> {
   const response = await fetch(`${API_BASE_URL}/${wishId}`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -106,6 +112,7 @@ export async function updateWish(
 export async function deleteWish(wishId: number): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/${wishId}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {

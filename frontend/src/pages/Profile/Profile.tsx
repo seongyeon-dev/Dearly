@@ -1,4 +1,5 @@
-import { useState, type SyntheticEvent } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
+import axios from "axios";
 
 import ProfileImage from "./ProfileImage/ProfileImage";
 
@@ -9,16 +10,22 @@ type ProfileData = {
   introduction: string;
 };
 
-const PROFILE_STORAGE_KEY = "dearly-profile";
+type CurrentUser = {
+  user_id: number;
+  email: string;
+  nickname: string;
+};
+
+const API_URL = "http://localhost:3000/api/auth";
 
 const defaultProfile: ProfileData = {
-  nickname: "성연",
+  nickname: "",
   introduction: "나의 취향을 기록하는 공간",
 };
 
-function getSavedProfile(): ProfileData {
+function getSavedProfile(userId: number): ProfileData {
   try {
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+    const saved = localStorage.getItem(`dearly-profile-${userId}`);
 
     if (!saved) {
       return defaultProfile;
@@ -47,39 +54,113 @@ function getSavedProfile(): ProfileData {
 }
 
 function Profile() {
-  const [savedProfile] = useState(getSavedProfile);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [nickname, setNickname] = useState("");
+  const [introduction, setIntroduction] = useState(defaultProfile.introduction);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [nickname, setNickname] = useState(savedProfile.nickname);
+  useEffect(() => {
+    let active = true;
 
-  const [introduction, setIntroduction] = useState(savedProfile.introduction);
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get<{ user: CurrentUser }>(
+          `${API_URL}/me`,
+          {
+            withCredentials: true,
+          },
+        );
 
-  const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
+        if (!active) {
+          return;
+        }
+
+        const currentUser = response.data.user;
+        const savedProfile = getSavedProfile(currentUser.user_id);
+
+        setUser(currentUser);
+        setNickname(currentUser.nickname);
+        setIntroduction(savedProfile.introduction);
+      } catch (error) {
+        console.error("프로필 조회 실패:", error);
+
+        if (active) {
+          setUser(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void fetchProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!user || saving) {
+      return;
+    }
 
     const trimmedNickname = nickname.trim();
     const trimmedIntroduction = introduction.trim();
 
-    if (!trimmedNickname) {
-      alert("닉네임을 입력해 주세요.");
+    if (trimmedNickname.length < 2 || trimmedNickname.length > 10) {
+      alert("닉네임은 2자 이상 10자 이하로 입력해주세요.");
       return;
     }
 
-    const updatedProfile: ProfileData = {
-      nickname: trimmedNickname,
-      introduction: trimmedIntroduction,
-    };
+    setSaving(true);
 
     try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
+      const response = await axios.patch<{ user: CurrentUser }>(
+        `${API_URL}/me`,
+        {
+          nickname: trimmedNickname,
+        },
+        {
+          withCredentials: true,
+        },
+      );
 
-      setNickname(trimmedNickname);
+      const updatedUser = response.data.user;
+
+      const updatedProfile: ProfileData = {
+        nickname: updatedUser.nickname,
+        introduction: trimmedIntroduction,
+      };
+
+      localStorage.setItem(
+        `dearly-profile-${updatedUser.user_id}`,
+        JSON.stringify(updatedProfile),
+      );
+
+      setUser(updatedUser);
+      setNickname(updatedUser.nickname);
       setIntroduction(trimmedIntroduction);
 
       window.dispatchEvent(new Event("dearly-profile-updated"));
 
       alert("프로필이 수정되었습니다.");
-    } catch {
-      alert("프로필 저장에 실패했습니다.");
+
+      window.location.reload();
+    } catch (error) {
+      console.error("프로필 수정 실패:", error);
+
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message ?? "프로필 수정에 실패했습니다.");
+      } else {
+        alert("프로필 수정에 실패했습니다.");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -101,7 +182,8 @@ function Profile() {
               id="nickname"
               type="text"
               value={nickname}
-              maxLength={20}
+              maxLength={10}
+              disabled={loading || !user || saving}
               onChange={(event) => setNickname(event.target.value)}
             />
           </div>
@@ -114,6 +196,7 @@ function Profile() {
                 id="introduction"
                 value={introduction}
                 maxLength={50}
+                disabled={loading || !user || saving}
                 onChange={(event) => setIntroduction(event.target.value)}
               />
 
@@ -123,8 +206,12 @@ function Profile() {
             </div>
           </div>
 
-          <button type="submit" className="profile-submit-button">
-            수정하기
+          <button
+            type="submit"
+            className="profile-submit-button"
+            disabled={loading || !user || saving}
+          >
+            {saving ? "저장 중..." : "수정하기"}
           </button>
         </form>
       </div>

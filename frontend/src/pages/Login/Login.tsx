@@ -1,7 +1,9 @@
 import { useState, type SyntheticEvent } from "react";
 import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
+import { login } from "../../api/authApi";
 import "./Login.css";
 
 function Login() {
@@ -11,17 +13,32 @@ function Login() {
   const [password, setPassword] = useState("");
   const [keepLogin, setKeepLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    console.log({
-      email,
-      password,
-      keepLogin,
-    });
+    setError("");
+    setIsLoading(true);
 
-    navigate("/");
+    try {
+      await login(email.trim(), password);
+
+      navigate("/", { replace: true });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setError(
+          typeof error.response?.data?.message === "string"
+            ? error.response.data.message
+            : "로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.",
+        );
+      } else {
+        setError("로그인 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -45,6 +62,7 @@ function Login() {
                 value={email}
                 placeholder="이메일을 입력해주세요."
                 onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
                 required
               />
             </div>
@@ -62,6 +80,7 @@ function Login() {
                 value={password}
                 placeholder="비밀번호를 입력해주세요."
                 onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
                 required
               />
 
@@ -94,8 +113,18 @@ function Login() {
             </button>
           </div>
 
-          <button type="submit" className="login-submit-button">
-            로그인
+          {error && (
+            <p className="login-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="login-submit-button"
+            disabled={isLoading}
+          >
+            {isLoading ? "로그인 중..." : "로그인"}
           </button>
         </form>
 

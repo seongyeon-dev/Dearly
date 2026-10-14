@@ -1,3 +1,4 @@
+
 .header {
   width: 100%;
   height: 60px;
@@ -18,8 +19,122 @@
   font-weight: 600;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-left: auto;
+}
+
 .header-text {
   color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 400;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: var(--color-text, #263047);
+  font-size: 13px;
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+.header-user svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.header-login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  padding: 9px 17px;
+
+  background-color: var(--color-primary);
+  color: #ffffff;
+
+  border: none;
+  border-radius: 9px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.header-login-button:hover {
+  background-color: var(--color-primary-hover, #c67589);
+}
+
+.header-login-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.header-login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .header-right {
+    gap: 10px;
+  }
+
+  .header-text {
+    display: none;
+  }
+
+  .header-user {
+    gap: 5px;
+    font-size: 12px;
+  }
+
+  .header-user svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .header-login-button {
+    padding: 8px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .header-login-button svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+@media (max-width: 360px) {
+  .header {
+    padding: 0 12px;
+  }
+
+  .header-logo {
+    font-size: 18px;
+  }
+
+  .header-right {
+    gap: 7px;
+  }
+
+  .header-login-button {
+    padding: 7px 9px;
+  }
 }
