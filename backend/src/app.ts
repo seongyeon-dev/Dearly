@@ -5,6 +5,8 @@ import session from "express-session";
 import MySQLStoreFactory from "express-mysql-session";
 import "dotenv/config";
 
+import pool from "./config/db";
+
 import wishRoutes from "./routes/wishRoutes";
 import purchaseRoutes from "./routes/purchaseRoutes";
 import wishImageRoutes from "./routes/wishImageRoutes";
@@ -12,6 +14,10 @@ import budgetRoutes from "./routes/budgetRoutes";
 import authRoutes from "./routes/authRoutes";
 
 const app = express();
+
+app.set("trust proxy", 1);
+
+const isProduction = process.env.NODE_ENV === "production";
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -21,18 +27,21 @@ if (!sessionSecret) {
 
 const MySQLStore = MySQLStoreFactory(session);
 
-const sessionStore = new MySQLStore({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  createDatabaseTable: true,
-});
+const sessionStore = new MySQLStore(
+  {
+    createDatabaseTable: true,
+  },
+  pool as unknown as ConstructorParameters<typeof MySQLStore>[1],
+);
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+].filter((origin): origin is string => Boolean(origin));
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
@@ -48,8 +57,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24,
     },
   }),
@@ -65,6 +74,6 @@ app.use("/api/budgets", budgetRoutes);
 
 const PORT = Number(process.env.PORT || 3000);
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`서버 실행: http://localhost:${PORT}`);
 });
