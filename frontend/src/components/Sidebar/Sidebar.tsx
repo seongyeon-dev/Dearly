@@ -26,9 +26,12 @@ type CurrentUser = {
 
 const PROFILE_STORAGE_KEY = "dearly-profile";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:3000"
-).replace(/\/$/, "");
+const API_BASE_URL = import.meta.env.PROD
+  ? ""
+  : (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(
+      /\/$/,
+      "",
+    );
 
 const categories = [
   { name: "전체", value: null },

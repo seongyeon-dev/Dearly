@@ -16,10 +16,12 @@ type CurrentUser = {
   nickname: string;
 };
 
-// 로컬 개발 환경과 Vercel 배포 환경에서 사용할 API 주소
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:3000"
-).replace(/\/$/, "");
+const API_BASE_URL = import.meta.env.PROD
+  ? ""
+  : (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(
+      /\/$/,
+      "",
+    );
 
 const API_URL = `${API_BASE_URL}/api/auth`;
 
