@@ -7,9 +7,12 @@ import "./ProfileImage.css";
 const DB_NAME = "dearly-images";
 const STORE_NAME = "profiles";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:3000"
-).replace(/\/$/, "");
+const API_BASE_URL = import.meta.env.PROD
+  ? ""
+  : (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(
+      /\/$/,
+      "",
+    );
 
 interface CurrentUser {
   user_id: number;

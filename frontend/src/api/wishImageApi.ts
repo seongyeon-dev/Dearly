@@ -1,8 +1,11 @@
+
 const SERVER_BASE_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:3000"
 ).replace(/\/$/, "");
 
-const API_BASE_URL = `${SERVER_BASE_URL}/api/wishes`;
+const API_BASE_URL = `${
+  import.meta.env.PROD ? "" : SERVER_BASE_URL
+}/api/wishes`;
 
 export interface WishImageResponse {
   image_id: number;
@@ -70,10 +73,13 @@ export async function deleteWishImage(
   wishId: number,
   imageId: number,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/${wishId}/images/${imageId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/${wishId}/images/${imageId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    },
+  );
 
   if (!response.ok) {
     throw new Error("상품 이미지 삭제에 실패했습니다.");
@@ -81,7 +87,10 @@ export async function deleteWishImage(
 }
 
 export function getWishImageUrl(imageUrl: string): string {
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+  if (
+    imageUrl.startsWith("http://") ||
+    imageUrl.startsWith("https://")
+  ) {
     return imageUrl;
   }
 
