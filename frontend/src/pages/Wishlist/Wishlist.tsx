@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WishlistCard from "../../components/WishlistCard/WishlistCard";
-import { fetchWishes } from "../../api/wishApi";
+import { fetchWishes, updateWish } from "../../api/wishApi";
 import { fetchPurchaseByWishId } from "../../api/purchaseApi";
 import type { Wish, WishCategory } from "../../types/wish";
 
@@ -161,23 +161,10 @@ function Wishlist() {
     setUpdatingFavorites((prev) => [...prev, productId]);
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/wishes/${productId}`,
-        {
-          method: "PATCH",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            is_favorite: nextFavorite,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("관심 상품 저장에 실패했습니다.");
-      }
+      // 공통 API 함수를 사용해 관심 상품 상태 변경
+      await updateWish(productId, {
+        is_favorite: nextFavorite,
+      });
 
       setItems((prev) =>
         prev.map((item) =>

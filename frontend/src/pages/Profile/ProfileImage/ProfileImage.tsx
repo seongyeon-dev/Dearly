@@ -7,6 +7,10 @@ import "./ProfileImage.css";
 const DB_NAME = "dearly-images";
 const STORE_NAME = "profiles";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:3000"
+).replace(/\/$/, "");
+
 interface CurrentUser {
   user_id: number;
   email: string;
@@ -110,12 +114,11 @@ function ProfileImage() {
 
     const loadUserAndImage = async () => {
       try {
-        const response = await axios.get<{ user: CurrentUser }>(
-          "http://localhost:3000/api/auth/me",
-          {
-            withCredentials: true,
-          },
-        );
+        const response = await axios.get<{
+          user: CurrentUser;
+        }>(`${API_BASE_URL}/api/auth/me`, {
+          withCredentials: true,
+        });
 
         if (!active) {
           return;

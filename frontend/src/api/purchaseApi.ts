@@ -22,10 +22,12 @@ export interface UpdatePurchaseRequest {
   memo: string | null;
 }
 
-const API_BASE_URL = "http://localhost:3000/api/purchases";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+const API_URL = `${API_BASE_URL}/api/purchases`;
 
 export async function fetchPurchases(): Promise<PurchaseResponse[]> {
-  const response = await fetch(API_BASE_URL, {
+  const response = await fetch(API_URL, {
     credentials: "include",
   });
 
@@ -39,7 +41,7 @@ export async function fetchPurchases(): Promise<PurchaseResponse[]> {
 export async function createPurchase(
   data: CreatePurchaseRequest,
 ): Promise<PurchaseResponse> {
-  const response = await fetch(API_BASE_URL, {
+  const response = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -58,7 +60,7 @@ export async function createPurchase(
 export async function fetchPurchaseByWishId(
   wishId: number,
 ): Promise<PurchaseResponse | null> {
-  const response = await fetch(`${API_BASE_URL}/wish/${wishId}`, {
+  const response = await fetch(`${API_URL}/wish/${wishId}`, {
     credentials: "include",
   });
 
@@ -77,7 +79,7 @@ export async function updatePurchase(
   wishId: number,
   data: UpdatePurchaseRequest,
 ): Promise<PurchaseResponse> {
-  const response = await fetch(`${API_BASE_URL}/wish/${wishId}`, {
+  const response = await fetch(`${API_URL}/wish/${wishId}`, {
     method: "PATCH",
     credentials: "include",
     headers: {
@@ -94,7 +96,7 @@ export async function updatePurchase(
 }
 
 export async function deletePurchase(wishId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/wish/${wishId}`, {
+  const response = await fetch(`${API_URL}/wish/${wishId}`, {
     method: "DELETE",
     credentials: "include",
   });

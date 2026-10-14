@@ -26,6 +26,10 @@ type CurrentUser = {
 
 const PROFILE_STORAGE_KEY = "dearly-profile";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:3000"
+).replace(/\/$/, "");
+
 const categories = [
   { name: "전체", value: null },
   { name: "뷰티", value: "BEAUTY" },
@@ -91,6 +95,7 @@ function getSavedProfileImage(userId: number): Promise<Blob | null> {
 
     request.onsuccess = () => {
       const database = request.result;
+
       const transaction = database.transaction("profiles", "readonly");
 
       const imageRequest = transaction
@@ -99,6 +104,7 @@ function getSavedProfileImage(userId: number): Promise<Blob | null> {
 
       imageRequest.onsuccess = () => {
         const result: unknown = imageRequest.result;
+
         resolve(result instanceof Blob ? result : null);
       };
 
@@ -138,12 +144,11 @@ function Sidebar() {
 
     const fetchCurrentUser = async () => {
       try {
-        const response = await axios.get<{ user: CurrentUser }>(
-          "http://localhost:3000/api/auth/me",
-          {
-            withCredentials: true,
-          },
-        );
+        const response = await axios.get<{
+          user: CurrentUser;
+        }>(`${API_BASE_URL}/api/auth/me`, {
+          withCredentials: true,
+        });
 
         if (active) {
           setUser(response.data.user);
@@ -170,6 +175,7 @@ function Sidebar() {
         nickname: "Dearly, Me",
         introduction: "나의 위시리스트",
       });
+
       return;
     }
 
@@ -180,10 +186,12 @@ function Sidebar() {
     updateProfile();
 
     window.addEventListener("dearly-profile-updated", updateProfile);
+
     window.addEventListener("storage", updateProfile);
 
     return () => {
       window.removeEventListener("dearly-profile-updated", updateProfile);
+
       window.removeEventListener("storage", updateProfile);
     };
   }, [user]);
@@ -239,6 +247,7 @@ function Sidebar() {
   }, [user]);
 
   const searchParams = new URLSearchParams(location.search);
+
   const selectedCategory = searchParams.get("category");
 
   return (

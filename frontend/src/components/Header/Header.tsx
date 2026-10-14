@@ -11,6 +11,8 @@ interface User {
   nickname: string;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 function Header() {
   const navigate = useNavigate();
 
@@ -21,7 +23,7 @@ function Header() {
     const fetchCurrentUser = async () => {
       try {
         const response = await axios.get<{ user: User }>(
-          "http://localhost:3000/api/auth/me",
+          `${API_BASE_URL}/api/auth/me`,
           {
             withCredentials: true,
           },
@@ -41,7 +43,7 @@ function Header() {
   const handleLogout = async () => {
     try {
       await axios.post(
-        "http://localhost:3000/api/auth/logout",
+        `${API_BASE_URL}/api/auth/logout`,
         {},
         {
           withCredentials: true,

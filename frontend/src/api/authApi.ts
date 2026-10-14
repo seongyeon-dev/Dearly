@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/auth";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+const API_URL = `${API_BASE_URL}/api/auth`;
 
 export interface LoginResponse {
   user: {
@@ -44,7 +46,9 @@ export async function login(
 }
 
 export async function signup(data: SignupRequest): Promise<SignupResponse> {
-  const response = await axios.post<SignupResponse>(`${API_URL}/signup`, data);
+  const response = await axios.post<SignupResponse>(`${API_URL}/signup`, data, {
+    withCredentials: true,
+  });
 
   return response.data;
 }

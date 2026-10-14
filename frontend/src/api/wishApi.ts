@@ -44,10 +44,12 @@ export interface UpdateWishRequest {
   is_favorite?: boolean;
 }
 
-const API_BASE_URL = "http://localhost:3000/api/wishes";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+const API_URL = `${API_BASE_URL}/api/wishes`;
 
 export async function fetchWishes(): Promise<WishResponse[]> {
-  const response = await fetch(API_BASE_URL, {
+  const response = await fetch(API_URL, {
     credentials: "include",
   });
 
@@ -61,7 +63,7 @@ export async function fetchWishes(): Promise<WishResponse[]> {
 export async function fetchWishById(
   wishId: number,
 ): Promise<WishDetailResponse> {
-  const response = await fetch(`${API_BASE_URL}/${wishId}`, {
+  const response = await fetch(`${API_URL}/${wishId}`, {
     credentials: "include",
   });
 
@@ -75,7 +77,7 @@ export async function fetchWishById(
 export async function createWish(
   data: CreateWishRequest,
 ): Promise<CreateWishResponse> {
-  const response = await fetch(API_BASE_URL, {
+  const response = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -95,7 +97,7 @@ export async function updateWish(
   wishId: number,
   data: UpdateWishRequest,
 ): Promise<WishDetailResponse> {
-  const response = await fetch(`${API_BASE_URL}/${wishId}`, {
+  const response = await fetch(`${API_URL}/${wishId}`, {
     method: "PATCH",
     credentials: "include",
     headers: {
@@ -112,7 +114,7 @@ export async function updateWish(
 }
 
 export async function deleteWish(wishId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/${wishId}`, {
+  const response = await fetch(`${API_URL}/${wishId}`, {
     method: "DELETE",
     credentials: "include",
   });
